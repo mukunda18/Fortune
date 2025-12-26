@@ -7,6 +7,8 @@ const server = http.createServer(expressApp);
 const io = new SocketIOServer(server);
 
 const rooms = new Map<string, Set<string>>();
+const playerMap = new Map<string, string>();
+
 function randomString(length = 6) {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let result = "";
@@ -18,14 +20,14 @@ function randomString(length = 6) {
 }
 
 io.on("connection", (socket) => {
-    console.log("🟢 Client connected:", socket.id);
-
+    console.log("🟢 Socket connected:", socket.id);
+    playerMap.set(socket.id, socket.handshake.auth.playerName);
     socket.on("disconnect", () => {
-        console.log("🔴 Client disconnected:", socket.id);
+        console.log("🔴 Socket disconnected:", socket.id);
         rooms.forEach((players, roomName) => {
             if (players.has(socket.id)) {
                 players.delete(socket.id);
-                io.to(roomName).emit("playerListUpdate", Array.from(players));
+                io.to(roomName).emit("playerListUpdate", Array.from(players).map(id => playerMap.get(id)));
                 if (players.size === 0) {
                     rooms.delete(roomName);
                 }
@@ -33,7 +35,8 @@ io.on("connection", (socket) => {
         });
     });
 
-    socket.on("joinRoom", (roomName: string, callback: (data: { roomId: string, players: string[] }) => void) => {
+    socket.on("joinRoom", (roomName: string, playerName: string, callback: (data: { roomId: string, players: string[] }) => void) => {
+        playerMap.set(socket.id, playerName);
         if (!roomName.trim()) {
             roomName = randomString();
             while (rooms.has(roomName)) roomName = randomString();
@@ -47,8 +50,8 @@ io.on("connection", (socket) => {
         const players = Array.from(rooms.get(roomName)!);
         callback({ roomId: roomName, players });
 
-        io.to(roomName).emit("playerListUpdate", players);
-        console.log(`➡️ Client ${socket.id} joined room: ${roomName}`);
+        io.to(roomName).emit("playerListUpdate", Array.from(players).map(id => playerMap.get(id)));
+        console.log(`➡️ Client ${playerMap.get(socket.id)} joined room: ${roomName}`);
     });
 
 
@@ -58,10 +61,10 @@ io.on("connection", (socket) => {
             const players = rooms.get(roomName);
             if (players) {
                 players.delete(socket.id);
-                console.log(`⬅️ Client ${socket.id} left room: ${roomName}`);
+                console.log(`⬅️ Client ${playerMap.get(socket.id)} left room: ${roomName}`);
 
                 if (players.size > 0) {
-                    io.to(roomName).emit("playerListUpdate", Array.from(players));
+                    io.to(roomName).emit("playerListUpdate", Array.from(players).map(id => playerMap.get(id)));
                 } else {
                     rooms.delete(roomName);
                 }

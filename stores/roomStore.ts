@@ -1,4 +1,4 @@
-import { atom, useAtom } from "jotai";
+import { atom } from "jotai";
 import { io, type Socket } from "socket.io-client";
 
 export const socketAtom = atom<Socket | null>(null);
@@ -6,6 +6,7 @@ export const connectingAtom = atom(false);
 export const gameRoomIdAtom = atom("");
 export const playersAtom = atom<string[]>([]);
 export const joinedRoomAtom = atom(false);
+export const playerNameAtom = atom("");
 
 export const connectAtom = atom(
   null,
@@ -14,7 +15,11 @@ export const connectAtom = atom(
     if (currentSocket) return;
 
     set(connectingAtom, true);
-    const socket = io();
+    const socket = io({
+      auth: {
+        playerName: get(playerNameAtom)
+      }
+    });
 
     socket.on("connect", () => {
       set(socketAtom, socket);
@@ -60,7 +65,7 @@ export const joinRoomAtom = atom(
       roomId: string;
       players: string[];
     }>((resolve) => {
-      socket.emit("joinRoom", roomName, resolve);
+      socket.emit("joinRoom", roomName, get(playerNameAtom), resolve);
     });
 
     set(gameRoomIdAtom, roomId);
@@ -78,5 +83,6 @@ export const leaveRoomAtom = atom(
     socket.emit("leaveRoom");
     set(gameRoomIdAtom, "");
     set(playersAtom, []);
+    set(joinedRoomAtom, false);
   }
 );

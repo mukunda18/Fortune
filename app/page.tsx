@@ -9,15 +9,18 @@ import {
   connectAtom,
   disconnectAtom,
   joinRoomAtom,
+  playerNameAtom
 } from "@/stores/roomStore";
 
 export default function Home() {
   const [roomInput, setRoomInput] = useState("");
+  const [playerInput, setPlayerInput] = useState("");
   const [socket] = useAtom(socketAtom);
   const [connecting] = useAtom(connectingAtom);
   const [, connect] = useAtom(connectAtom);
   const [, disconnect] = useAtom(disconnectAtom);
   const [, joinRoom] = useAtom(joinRoomAtom);
+  const [playerName, setPlayerName] = useAtom(playerNameAtom);
   const router = useRouter();
 
   const handleConnect = () => {
@@ -33,12 +36,16 @@ export default function Home() {
       alert("Please connect first!");
       return;
     }
+    if (!playerInput.trim()) {
+      alert("Please enter a player name!");
+      return;
+    }
     if (!roomInput.trim()) {
       alert("Please enter a room ID!");
       return;
     }
     try {
-      await joinRoom(roomInput);
+      setPlayerName(playerInput);
       router.push(`/room/${roomInput}`);
       setRoomInput("");
     } catch (err) {
@@ -52,7 +59,12 @@ export default function Home() {
       alert("Please connect first!");
       return;
     }
+    if (!playerInput.trim()) {
+      alert("Please enter a player name!");
+      return;
+    }
     try {
+      setPlayerName(playerInput);
       const roomId = await joinRoom();
       router.push(`/room/${roomId}`);
     } catch (err) {
@@ -75,6 +87,12 @@ export default function Home() {
 
       <div>
         <h2>Join a Room</h2>
+        <input
+          type="text"
+          placeholder="Enter player name"
+          value={playerInput}
+          onChange={(e) => setPlayerInput(e.target.value)}
+        />
         <input
           type="text"
           placeholder="Enter room ID"

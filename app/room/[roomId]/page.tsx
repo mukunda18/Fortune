@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAtom } from "jotai";
 import {
   playersAtom,
   joinRoomAtom,
   leaveRoomAtom,
-  connectAtom,
 } from "@/stores/roomStore";
 
 export default function RoomPage() {
@@ -16,30 +15,27 @@ export default function RoomPage() {
   const [players] = useAtom(playersAtom);
   const [, joinRoom] = useAtom(joinRoomAtom);
   const [, leaveRoom] = useAtom(leaveRoomAtom);
-  const [, connect] = useAtom(connectAtom);
   const router = useRouter();
-  const hasJoined = useRef(false);
+
+  const handleLeaveRoom = () => {
+    leaveRoom();
+    router.push("/");
+  };
 
   useEffect(() => {
-    connect();
-
-    if (!hasJoined.current) {
-      (async () => {
-        try {
-          await joinRoom(roomId);
-          hasJoined.current = true;
-        } catch (err) {
-          console.error(err);
-          router.push("/");
-        }
-      })();
-    }
+    (async () => {
+      try {
+        await joinRoom(roomId);
+      } catch (err) {
+        console.error(err);
+        router.push("/");
+      }
+    })();
 
     return () => {
-      hasJoined.current = false;
       leaveRoom();
     };
-  }, [roomId, router, joinRoom, leaveRoom, connect]);
+  }, [roomId, router, joinRoom, leaveRoom]);
 
   return (
     <main>
@@ -50,6 +46,9 @@ export default function RoomPage() {
           <li key={player}>{player}</li>
         ))}
       </ul>
+      <button onClick={handleLeaveRoom}>
+        Leave Room
+      </button>
     </main>
   );
 }
