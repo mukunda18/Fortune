@@ -5,13 +5,7 @@ export const socketAtom = atom<Socket | null>(null);
 export const connectingAtom = atom(false);
 export const gameRoomIdAtom = atom("");
 export const playersAtom = atom<string[]>([]);
-
-export const roomStateAtom = atom((get) => ({
-  gameRoomId: get(gameRoomIdAtom),
-  players: get(playersAtom),
-  socket: get(socketAtom),
-  connecting: get(connectingAtom),
-}));
+export const joinedRoomAtom = atom(false);
 
 export const connectAtom = atom(
   null,
@@ -36,6 +30,7 @@ export const connectAtom = atom(
       set(gameRoomIdAtom, "");
       set(playersAtom, []);
       set(connectingAtom, false);
+      set(joinedRoomAtom, false);
     });
   }
 );
@@ -50,12 +45,14 @@ export const disconnectAtom = atom(
     set(gameRoomIdAtom, "");
     set(playersAtom, []);
     set(connectingAtom, false);
+    set(joinedRoomAtom, false);
   }
 );
 
 export const joinRoomAtom = atom(
   null,
   async (get, set, roomName: string = "") => {
+    if (get(joinedRoomAtom)) return;
     const socket = get(socketAtom);
     if (!socket) throw new Error("Socket not connected.");
 
@@ -68,6 +65,7 @@ export const joinRoomAtom = atom(
 
     set(gameRoomIdAtom, roomId);
     set(playersAtom, players);
+    set(joinedRoomAtom, true);
     return roomId;
   }
 );
@@ -82,13 +80,3 @@ export const leaveRoomAtom = atom(
     set(playersAtom, []);
   }
 );
-
-export function useRoom<T>(selector: (state: {
-  gameRoomId: string;
-  players: string[];
-  socket: Socket | null;
-  connecting: boolean;
-}) => T): T {
-  const roomState = useAtom(roomStateAtom)[0];
-  return selector(roomState);
-}

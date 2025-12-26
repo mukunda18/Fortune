@@ -53,7 +53,7 @@ export default function Home() {
       return;
     }
     try {
-      const roomId = await joinRoom(); // joinRoom without param creates new room
+      const roomId = await joinRoom();
       router.push(`/room/${roomId}`);
     } catch (err) {
       console.error(err);
