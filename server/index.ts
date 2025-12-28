@@ -1,7 +1,7 @@
 import next from "next"
 import dotenv from "dotenv"
-
-import { expressApp, server, io } from "./server"
+import { expressApp, server } from "./server"
+import { createRoom } from "./gameRooms"
 
 dotenv.config()
 const dev = process.env.NODE_ENV !== "production"
@@ -11,8 +11,12 @@ const handle = app.getRequestHandler();
 const PORT = 3000
 
 app.prepare().then(() => {
-
-    expressApp.get("/api/health", (_req, res) => {
+    expressApp.post("/api/createRoom", (req, res) => {
+        console.log("[Server] POST /api/createRoom requested");
+        const roomId = createRoom();
+        res.json({ roomId })
+    });
+    expressApp.get("/api/health", (_, res) => {
         res.json({ status: "ok" })
     })
 

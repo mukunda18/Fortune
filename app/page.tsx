@@ -1,41 +1,27 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAtom } from "jotai";
 import {
-  socketAtom,
-  connectingAtom,
-  connectAtom,
-  disconnectAtom,
-  joinRoomAtom,
-  playerNameAtom
+  createRoom,
+  playerNameAtom,
 } from "@/stores/roomStore";
 
 export default function Home() {
   const [roomInput, setRoomInput] = useState("");
   const [playerInput, setPlayerInput] = useState("");
-  const [socket] = useAtom(socketAtom);
-  const [connecting] = useAtom(connectingAtom);
-  const [, connect] = useAtom(connectAtom);
-  const [, disconnect] = useAtom(disconnectAtom);
-  const [, joinRoom] = useAtom(joinRoomAtom);
-  const [playerName, setPlayerName] = useAtom(playerNameAtom);
+  const [, setPlayerName] = useAtom(playerNameAtom);
   const router = useRouter();
 
-  const handleConnect = () => {
-    connect();
-  };
-
-  const handleDisconnect = () => {
-    disconnect();
-  };
+  useEffect(() => {
+    return () => {
+      setPlayerInput("");
+      setRoomInput("");
+    };
+  }, []);
 
   const handleJoinRoom = async () => {
-    if (!socket) {
-      alert("Please connect first!");
-      return;
-    }
     if (!playerInput.trim()) {
       alert("Please enter a player name!");
       return;
@@ -44,28 +30,22 @@ export default function Home() {
       alert("Please enter a room ID!");
       return;
     }
-    try {
-      setPlayerName(playerInput);
-      router.push(`/room/${roomInput}`);
-      setRoomInput("");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to join room");
-    }
+    setPlayerName(playerInput);
+    router.push(`/room/${roomInput}`);
   };
 
   const handleCreateRoom = async () => {
-    if (!socket) {
-      alert("Please connect first!");
-      return;
-    }
     if (!playerInput.trim()) {
       alert("Please enter a player name!");
       return;
     }
     try {
+      const roomId = await createRoom();
       setPlayerName(playerInput);
-      const roomId = await joinRoom();
+      if (!roomId) {
+        alert("Failed to create room");
+        return;
+      }
       router.push(`/room/${roomId}`);
     } catch (err) {
       console.error(err);
@@ -76,15 +56,6 @@ export default function Home() {
   return (
     <main>
       <h1>Welcome to Fortune</h1>
-
-      {!socket ? (
-        <button onClick={handleConnect} disabled={connecting}>
-          Connect
-        </button>
-      ) : (
-        <button onClick={handleDisconnect}>Disconnect</button>
-      )}
-
       <div>
         <h2>Join a Room</h2>
         <input
@@ -99,13 +70,13 @@ export default function Home() {
           value={roomInput}
           onChange={(e) => setRoomInput(e.target.value)}
         />
-        <button onClick={handleJoinRoom} disabled={!socket}>
+        <button onClick={handleJoinRoom}>
           Join Room
         </button>
       </div>
 
       <div>
-        <button onClick={handleCreateRoom} disabled={!socket}>
+        <button onClick={handleCreateRoom}>
           Create Room
         </button>
       </div>

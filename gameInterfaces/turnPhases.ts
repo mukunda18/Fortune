@@ -1,0 +1,1 @@
+export enum turnPhase { preGame = "preGame", preRoll = "preRoll", roll = "roll", postRoll = "postRoll" };
