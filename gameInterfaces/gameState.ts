@@ -21,5 +21,6 @@ export interface gameState {
     trades: trade[],
     auction: auction,
     settings: setting,
-    gameHistory: history[]
+    gameHistory: history[],
+    version: number
 }

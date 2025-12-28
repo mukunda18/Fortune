@@ -2,6 +2,7 @@ import { atom } from "jotai";
 import { io, type Socket } from "socket.io-client";
 import { emitWithTimeout } from "./emit";
 import { gameState } from "@/gameInterfaces/gameState";
+import { ServerResponse, isServerResponse } from "@/interfaces/serverResponse";
 import { gameStateAtom } from "./gameStore";
 
 type ConnectionState = {
@@ -41,11 +42,6 @@ export const connectAtom = atom(
       set(connectionAtom, { socket, connecting: false });
     });
 
-    socket.on("roomUpdate", (newState: gameState) => {
-      console.log("[roomStore] Received room update:", newState);
-      set(gameStateAtom, newState);
-    });
-
     socket.on("disconnect", () => {
       console.log("[roomStore] Socket disconnected");
       set(connectionAtom, { socket: null, connecting: false });
@@ -56,6 +52,10 @@ export const connectAtom = atom(
       console.error("[roomStore] Socket connection error:", err);
       set(connectionAtom, { socket: null, connecting: false });
       set(roomAtom, { id: "", joined: false });
+    });
+
+    socket.on("updateRoom", (room: gameState) => {
+      set(gameStateAtom, room);
     });
   }
 );
@@ -96,15 +96,20 @@ export const joinRoomAtom = atom(
     if (!socket) throw new Error("Socket not connected.");
     try {
       console.log("[roomStore] Joining room:", roomName);
-      const state = await emitWithTimeout<gameState | null>(
+      const response = await emitWithTimeout<gameState | ServerResponse>(
         socket,
         "joinRoom",
         roomName,
         get(playerNameAtom)
       );
+      if (isServerResponse(response)) {
+        console.log("[roomStore] Join room failed:", response.message);
+        set(roomAtom, { id: "", joined: false });
+        return;
+      }
+      set(gameStateAtom, response);
       set(roomAtom, { id: roomName, joined: true });
-      set(gameStateAtom, state);
-      console.log("[roomStore] Joined room successfully", state);
+      console.log("[roomStore] Joined room successfully");
     } catch (error) {
       console.log(error);
       set(roomAtom, { id: "", joined: false });

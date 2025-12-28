@@ -11,14 +11,13 @@ import {
   roomAtom,
   connectingAtom
 } from "@/stores/roomStore";
-import { gameStateAtom } from "@/stores/gameStore";
+import GameStateViewer from "@/components/gameboard";
 
 export default function RoomPage() {
   const params = useParams();
   const roomId = params.roomId?.toString();
 
   const [room] = useAtom(roomAtom);
-  const [gameState] = useAtom(gameStateAtom);
 
   const [, connect] = useAtom(connectAtom);
   const [, leaveRoom] = useAtom(leaveRoomAtom);
@@ -49,13 +48,13 @@ export default function RoomPage() {
     <main>
       <h1>Room: {roomId}</h1>
       <p>Status: {room.joined ? "Joined" : "Not joined"}</p>
-      <p>Game State: {gameState ? JSON.stringify(gameState) : "Not joined"}</p>
       <button onClick={handleLeaveRoom}>
         Leave Room
       </button>
       <button onClick={handleJoinRoom} disabled={room.joined || connecting}>
         Join Room
       </button>
+      {room.joined && <GameStateViewer />}
     </main>
   );
 }
