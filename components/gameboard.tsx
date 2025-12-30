@@ -2,6 +2,7 @@
 
 import { useAtom } from "jotai";
 import { gameStateAtom } from "@/stores/gameStore";
+import { playerNameAtom } from "@/stores/roomStore";
 import { GameStatsRow } from "./gameStatsRow";
 import { PlayersSection } from "./playersSection";
 import { SettingsSidebar } from "./settingsSidebar";
@@ -11,6 +12,7 @@ import { DebugInfo } from "./debugInfo";
 
 export default function GameStateViewer() {
   const [gameState] = useAtom(gameStateAtom);
+  const [playerName] = useAtom(playerNameAtom);
 
   if (!gameState) {
     return (
@@ -29,7 +31,7 @@ export default function GameStateViewer() {
 
       <div>
         <div>
-          <PlayersSection gameState={gameState} />
+          <PlayersSection gameState={gameState} playerName={playerName} />
         </div>
         <SettingsSidebar gameState={gameState} />
       </div>

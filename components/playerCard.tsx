@@ -3,17 +3,25 @@ import { gameState } from "@/gameInterfaces/gameState";
 interface PlayerCardProps {
   player: gameState['players'][string];
   isCurrentPlayer: boolean;
+  isAdmin?: boolean;
+  isUser?: boolean;
 }
 
-export function PlayerCard({ player, isCurrentPlayer }: PlayerCardProps) {
+export function PlayerCard({ player, isCurrentPlayer, isAdmin, isUser }: PlayerCardProps) {
   return (
     <div>
       <div>
         <div>
-          <span>{isCurrentPlayer ? '🎯' : '👤'}</span>
+          <span>{isUser ? '👨' : isCurrentPlayer ? '🎯' : '👤'}</span>
           <h3>
             {player.name}
+            {isUser && <span> (You)</span>}
           </h3>
+          {isAdmin && (
+            <span>
+              👑 Host
+            </span>
+          )}
         </div>
         {player.bankrupted && (
           <span>

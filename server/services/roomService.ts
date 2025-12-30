@@ -110,6 +110,12 @@ export class RoomService {
       disconnected: false,
       disconnectTime: 0,
     };
+    
+    if (!room.admin && Object.keys(room.players).length === 1) {
+      room.admin = playerName;
+      console.log(`[RoomService] ${playerName} is now the admin of room ${roomName}`);
+    }
+    
     this.playerToRoomMap.set(playerName, roomName);
     room.version++;
     return room;
@@ -133,6 +139,25 @@ export class RoomService {
       room.players[playerName].properties.length = 0;
       room.players[playerName].cards.length = 0;
     }
+
+    if (room.admin === playerName) {
+      const remainingPlayers = Object.keys(room.players).filter(p => {
+        if (room.turnPhase === turnPhase.preGame) {
+          return room.players[p] !== undefined;
+        } else {
+          return !room.players[p].bankrupted;
+        }
+      });
+      
+      if (remainingPlayers.length > 0) {
+        room.admin = remainingPlayers[0];
+        console.log(`[RoomService] Admin transferred to ${room.admin} in room ${roomName}`);
+      } else {
+        room.admin = "";
+        console.log(`[RoomService] No remaining players, admin cleared in room ${roomName}`);
+      }
+    }
+    
     room.version++;
     return roomName;
   }

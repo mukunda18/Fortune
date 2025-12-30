@@ -3,9 +3,10 @@ import { gameState } from "@/gameInterfaces/gameState";
 
 interface PlayersSectionProps {
   gameState: gameState;
+  playerName?: string;
 }
 
-export function PlayersSection({ gameState }: PlayersSectionProps) {
+export function PlayersSection({ gameState, playerName }: PlayersSectionProps) {
   return (
     <div>
       <h2>
@@ -22,6 +23,8 @@ export function PlayersSection({ gameState }: PlayersSectionProps) {
               key={p.name}
               player={p}
               isCurrentPlayer={gameState.currentPlayer === p.name}
+              isAdmin={gameState.admin === p.name}
+              isUser={playerName === p.name}
             />
           ))
         )}
