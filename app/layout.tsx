@@ -52,7 +52,7 @@ export default function RootLayout({
           <footer>
             <div>
               <p>
-                © 2025 Fortune Game. Built with Next.js + Socket.io
+                © 2025 Fortune Game.
               </p>
             </div>
           </footer>
