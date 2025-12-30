@@ -7,7 +7,7 @@ interface GameStatsRowProps {
 
 export function GameStatsRow({ gameState }: GameStatsRowProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div>
       <StatCard
         title="Current Player"
         value={gameState.currentPlayer || "Waiting..."}
