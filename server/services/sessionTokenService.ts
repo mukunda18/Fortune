@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { socketSessionService } from "./socketSessionService";
 
 export class SessionTokenService {
   private socketToSIDMap: Map<string, string> = new Map();
@@ -28,7 +29,7 @@ export class SessionTokenService {
     }
 
     if (existingSocketID !== socketID) {
-      // Update mapping for reconnection
+      socketSessionService.mapSocketToPlayer(socketID, socketSessionService.getPlayerForSocket(existingSocketID) || "");
       this.sidToSocketMap.set(SID, socketID);
       this.socketToSIDMap.set(socketID, SID);
       console.log(

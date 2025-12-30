@@ -78,6 +78,7 @@ export class RoomService {
       if (room.players[playerName]) {
         room.players[playerName].disconnected = false;
         room.players[playerName].disconnectTime = 0;
+        room.version++;
         return room;
       }
     }
