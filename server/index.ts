@@ -2,7 +2,8 @@ import next from "next"
 import dotenv from "dotenv"
 import { expressApp, server } from "./server"
 import { roomService } from "./services/roomService"
-import { getSID } from "@/utils/SIDmapping"
+import { sessionTokenService } from "./services/sessionTokenService"
+
 
 dotenv.config()
 const dev = process.env.NODE_ENV !== "production"
@@ -29,7 +30,7 @@ app.prepare().then(() => {
         console.log("[Server] POST /api/getcookie requested");
         try {
             const socketID = req.body.id;
-            const SID = getSID(socketID);
+            const SID = sessionTokenService.generateOrGetSID(socketID);
             res.cookie("SID", SID, {
                 httpOnly: true,
                 secure: false,
