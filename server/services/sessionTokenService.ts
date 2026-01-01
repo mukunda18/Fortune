@@ -6,17 +6,16 @@ export class SessionTokenService {
   private sidToSocketMap: Map<string, string> = new Map();
 
   generateOrGetSID(socketID: string): string {
+    
     if (!socketID) return randomUUID();
 
-    let SID = this.socketToSIDMap.get(socketID);
+    let sid = this.socketToSIDMap.get(socketID) || randomUUID();
 
-    if (!SID) {
-      SID = randomUUID();
-      this.socketToSIDMap.set(socketID, SID);
-      this.sidToSocketMap.set(SID, socketID);
-    }
+    this.socketToSIDMap.set(socketID, sid);
+    this.sidToSocketMap.set(sid, socketID);
 
-    return SID;
+    return sid;
+
   }
 
   verifySID(SID: string, socketID: string): void {

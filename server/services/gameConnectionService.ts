@@ -11,8 +11,7 @@ export class GameConnectionService {
     roomId: string,
     playerName: string
   ): gameState | ServerResponse {
-    const reconnectTry =
-      socketSessionService.getPlayerForSocket(socket.id) === playerName;
+    const reconnectTry = socketSessionService.getPlayerForSocket(socket.id) === playerName;
 
     const response = roomService.joinRoom(roomId, playerName, reconnectTry);
 
@@ -54,7 +53,6 @@ export class GameConnectionService {
       `[GameConnectionService] Player ${playerName} left room ${roomId}`
     );
 
-    // Broadcast to remaining players
     io.to(roomId).emit("updateRoom", roomService.getRoom(roomId));
   }
 
@@ -64,14 +62,12 @@ export class GameConnectionService {
     if (!playerName) return;
 
     const roomId = roomService.handleDisconnect(playerName);
-    if (roomId) {
-      console.log(
-        `[GameConnectionService] Player ${playerName} disconnected from room ${roomId}`
-      );
-      io.to(roomId).emit("updateRoom", roomService.getRoom(roomId));
-    }
-
-    socketSessionService.unmapSocket(socketId);
+    if (!roomId) return;
+    console.log(
+      `[GameConnectionService] Player ${playerName} disconnected from room ${roomId}`
+    );
+    
+    io.to(roomId).emit("updateRoom", roomService.getRoom(roomId));
   }
 }
 

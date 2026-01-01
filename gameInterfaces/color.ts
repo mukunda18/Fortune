@@ -10,6 +10,5 @@ export const PLAYER_COLORS = [
     "pink",
     "brown",
     "cyan",
-    "magenta",
-    "nothing"
+    "magenta"
 ];

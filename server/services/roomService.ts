@@ -1,6 +1,7 @@
 import { gameState } from "@/gameInterfaces/gameState";
 import { turnPhase } from "@/gameInterfaces/turnPhases";
 import { ServerResponse } from "@/interfaces/serverResponse";
+import { PLAYER_COLORS } from "@/gameInterfaces/color";
 
 function randomRoomId(): string {
   return Math.random().toString(36).substring(2, 8);
@@ -66,57 +67,41 @@ export class RoomService {
     reconnectTry: boolean
   ): gameState | ServerResponse {
     const room = this.roomMap.get(roomName);
-
-    if (!room)
-      return {
-        ok: false,
-        code: "ROOM_NOT_FOUND",
-        message: "Room not found",
-      };
-
-    if (reconnectTry) {
-      if (room.players[playerName]) {
-        room.players[playerName].disconnected = false;
-        room.players[playerName].disconnectTime = 0;
+    if (!room) {
+      return { ok: false, code: "ROOM_NOT_FOUND", message: "Room not found" };
+    }
+    if (reconnectTry){
+      const player = room.players[playerName];
+      if (player){
+        player.disconnected = false;
+        player.disconnectTime = 0;
+        console.log(
+          `[RoomService] Player ${playerName} reconnected to room ${roomName}`
+        );
+        if (!room.admin) room.admin = playerName;
         room.version++;
+        
         return room;
       }
+      else if (this.playerToRoomMap.get(playerName) !== roomName){
+        this.leaveRoom(playerName);
+      }
+    }
+    if (Object.keys(room.players).length >= room.settings.maxPlayers) {
+      return { ok: false, code: "ROOM_FULL", message: "Room is full" };
+    }
+    if (room.turnPhase !== turnPhase.preGame) {
+      return { ok: false, code: "GAME_IN_PROGRESS", message: "Game already in progress" };
     }
 
-    if (
-      room.settings.maxPlayers <=
-      Object.keys(room.players).length
-    )
-      return {
-        ok: false,
-        code: "ROOM_FULL",
-        message: "Room is full",
-      };
+    room.players[playerName] = this.createPlayer(playerName, room.usedColors);
+    this.playerToRoomMap.set(playerName, roomName);
+
+    if (!room.admin) room.admin = playerName;
 
     console.log(
-      `[RoomService] Adding player ${playerName} to room ${roomName}`
+      `[RoomService] Player ${playerName} joined room ${roomName}`
     );
-    room.players[playerName] = {
-      name: playerName,
-      color: "nothing",
-      money: 1500,
-      properties: [],
-      cards: [],
-      bankrupted: false,
-      position: 0,
-      inJail: false,
-      jailTurns: 0,
-      turnTime: 0,
-      disconnected: false,
-      disconnectTime: 0,
-    };
-    
-    if (!room.admin && Object.keys(room.players).length === 1) {
-      room.admin = playerName;
-      console.log(`[RoomService] ${playerName} is now the admin of room ${roomName}`);
-    }
-    
-    this.playerToRoomMap.set(playerName, roomName);
     room.version++;
     return room;
   }
@@ -124,40 +109,21 @@ export class RoomService {
   leaveRoom(playerName: string): string {
     const roomName = this.playerToRoomMap.get(playerName);
     if (!roomName) return "";
-
-    this.playerToRoomMap.delete(playerName);
     const room = this.roomMap.get(roomName);
     if (!room) return "";
-
-    console.log(
-      `[RoomService] Removing player ${playerName} from room ${roomName}`
-    );
-    if (room.turnPhase === turnPhase.preGame) {
-      delete room.players[playerName];
-    } else {
-      room.players[playerName].bankrupted = true;
-      room.players[playerName].properties.length = 0;
-      room.players[playerName].cards.length = 0;
-    }
+    
+    room.usedColors = room.usedColors.filter(color => color !== room.players[playerName]?.color);
+    delete room.players[playerName];
+    this.playerToRoomMap.delete(playerName);
 
     if (room.admin === playerName) {
-      const remainingPlayers = Object.keys(room.players).filter(p => {
-        if (room.turnPhase === turnPhase.preGame) {
-          return room.players[p] !== undefined;
-        } else {
-          return !room.players[p].bankrupted;
-        }
-      });
-      
-      if (remainingPlayers.length > 0) {
-        room.admin = remainingPlayers[0];
-        console.log(`[RoomService] Admin transferred to ${room.admin} in room ${roomName}`);
-      } else {
-        room.admin = "";
-        console.log(`[RoomService] No remaining players, admin cleared in room ${roomName}`);
-      }
+      const remainingPlayers = Object.keys(room.players).filter(player => !(room.players[player].bankrupted) && !(room.players[player].disconnected));
+      room.admin = remainingPlayers.length > 0 ? remainingPlayers[0] : "";
     }
-    
+
+    console.log(
+      `[RoomService] Player ${playerName} left room ${roomName}`
+    );
     room.version++;
     return roomName;
   }
@@ -181,6 +147,27 @@ export class RoomService {
 
   getRoomForPlayer(playerName: string): string {
     return this.playerToRoomMap.get(playerName) || "";
+  }
+
+  createPlayer(playerName: string, usedColors: string[] = []) {
+    const availableColors = PLAYER_COLORS.filter(color => !usedColors.includes(color));
+    const color = availableColors.length > 0 ? availableColors[0] : "nothing";
+    usedColors.push(color);
+
+    return ({
+      name: playerName,
+      color: color,
+      money: 1500,
+      properties: [],
+      cards: [],
+      bankrupted: false,
+      position: 0,
+      inJail: false,
+      jailTurns: 0,
+      turnTime: 0,
+      disconnected: false,
+      disconnectTime: 0,
+    });
   }
 }
 

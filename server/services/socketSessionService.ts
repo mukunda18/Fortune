@@ -5,11 +5,6 @@ export class SocketSessionService {
   private playerToSocketMap: Map<string, string> = new Map();
 
   mapSocketToPlayer(socketId: string, playerName: string): void {
-    const existingPlayer = this.socketToPlayerMap.get(socketId);
-    if (existingPlayer && existingPlayer !== playerName) {
-      this.playerToSocketMap.delete(existingPlayer);
-    }
-
     this.socketToPlayerMap.set(socketId, playerName);
     this.playerToSocketMap.set(playerName, socketId);
     console.log(
