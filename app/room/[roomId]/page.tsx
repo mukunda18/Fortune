@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAtom } from "jotai";
 import {
-  leaveRoomAtom,
-  joinRoomAtom,
-  connectAtom,
-  disconnectAtom,
   roomAtom,
   connectingAtom,
   playerNameAtom,
 } from "@/stores/roomStore";
+import { roomService } from "@/services/roomService";
+import { socketService } from "@/services/socketService";
 import GameStateViewer from "@/components/gameboard";
 
 export default function RoomPage() {
@@ -19,10 +17,6 @@ export default function RoomPage() {
   const roomId = params.roomId?.toString();
 
   const [room] = useAtom(roomAtom);
-  const [, connect] = useAtom(connectAtom);
-  const [, leaveRoom] = useAtom(leaveRoomAtom);
-  const [, disconnect] = useAtom(disconnectAtom);
-  const [, joinRoom] = useAtom(joinRoomAtom);
   const [connecting] = useAtom(connectingAtom);
   const [playerName] = useAtom(playerNameAtom);
   const [error, setError] = useState("");
@@ -31,15 +25,15 @@ export default function RoomPage() {
   const router = useRouter();
 
   useEffect(() => {
-    connect();
+    socketService.connect();
     return () => {
-      disconnect();
+      socketService.disconnect();
     };
-  }, [connect, disconnect]);
+  }, []);
 
   const handleLeaveRoom = async () => {
     try {
-      leaveRoom();
+      roomService.leaveRoom();
       router.push("/");
     } catch (error) {
       setError("Failed to leave room");
@@ -48,11 +42,11 @@ export default function RoomPage() {
 
   const handleJoinRoom = async () => {
     if (!roomId) return;
-    
+
     setError("");
     setIsJoining(true);
     try {
-      await joinRoom(roomId);
+      await roomService.joinRoom(roomId);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to join room";
       setError(message);
@@ -81,7 +75,7 @@ export default function RoomPage() {
         <div>
           <div>
             <p>
-              Status: 
+              Status:
               <span>
                 {room.joined ? '✅ Joined' : '⏳ Waiting'}
               </span>

@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAtom } from "jotai";
-import {
-  createRoom,
-  playerNameAtom,
-} from "@/stores/roomStore";
+import { playerNameAtom } from "@/stores/roomStore";
+import { roomService } from "@/services/roomService";
 
 export default function Home() {
   const [roomInput, setRoomInput] = useState("");
@@ -26,7 +24,7 @@ export default function Home() {
 
   const handleJoinRoom = async () => {
     setError("");
-    
+
     if (!playerInput.trim()) {
       setError("Please enter a player name");
       return;
@@ -48,7 +46,7 @@ export default function Home() {
 
   const handleCreateRoom = async () => {
     setError("");
-    
+
     if (!playerInput.trim()) {
       setError("Please enter a player name");
       return;
@@ -56,7 +54,7 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      const roomId = await createRoom();
+      const roomId = await roomService.createRoom();
       if (!roomId) {
         setError("Failed to create room. Please try again.");
         return;

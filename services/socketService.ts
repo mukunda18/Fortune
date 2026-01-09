@@ -1,85 +1,135 @@
-/**
- * Client-side socket service for managing Socket.IO connections.
- * Handles socket connection lifecycle and event management.
- */
-
 import { io, type Socket } from "socket.io-client";
+import { getDefaultStore } from "jotai";
+import { connectionAtom, roomAtom } from "@/stores/roomStore";
+import { gameStateAtom } from "@/stores/gameStore";
 import { gameState } from "@/gameInterfaces/gameState";
+import { apiService } from "./apiService";
 
-export interface SocketEventHandler {
-  onConnect: (socketId: string) => void;
-  onDisconnect: () => void;
-  onError: (error: Error) => void;
-  onUpdateRoom: (room: gameState) => void;
-}
+const store = getDefaultStore();
 
 export class SocketService {
   private socket: Socket | null = null;
-  private handlers: Partial<SocketEventHandler> = {};
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
 
-  constructor() {}
+  constructor() { }
 
-  setHandlers(handlers: Partial<SocketEventHandler>): void {
-    this.handlers = handlers;
-  }
+  private connectTimeout: NodeJS.Timeout | null = null;
 
-  connect(): Promise<string> {
+  async connect(): Promise<string> {
+    const currentSocketId = store.get(connectionAtom).socket;
+    const isConnecting = store.get(connectionAtom).connecting;
+
+    if (currentSocketId || isConnecting) {
+      console.log("[SocketService] Already connected or connecting");
+      return currentSocketId || "";
+    }
+
     return new Promise((resolve, reject) => {
-      if (this.socket?.connected && this.socket.id) {
-        resolve(this.socket.id);
-        return;
-      }
-
       console.log("[SocketService] Initiating connection...");
+
+      store.set(connectionAtom, (prev) => ({
+        ...prev,
+        connecting: true,
+        error: null,
+      }));
+
       this.socket = io({
         withCredentials: true,
       });
 
-      this.socket.on("connect", () => {
+      this.socket.on("connect", async () => {
+        if (this.connectTimeout) {
+          clearTimeout(this.connectTimeout);
+          this.connectTimeout = null;
+        }
+
         if (!this.socket?.id) {
-          reject(new Error("Socket connected but no ID"));
+          const error = new Error("Socket connected but no ID");
+          this.handleConnectionError(error);
+          reject(error);
           return;
         }
-        console.log("[SocketService] Connected with ID:", this.socket.id);
-        this.reconnectAttempts = 0;
+
         const socketId = this.socket.id;
-        this.handlers.onConnect?.(socketId);
-        resolve(socketId);
+        console.log("[SocketService] Connected with ID:", socketId);
+
+        this.reconnectAttempts = 0;
+
+        store.set(connectionAtom, {
+          socket: socketId,
+          connecting: false,
+          error: null,
+        });
+
+        try {
+          // Request SID cookie after connection
+          await apiService.getCookie(socketId);
+          resolve(socketId);
+        } catch (error) {
+          console.error("[SocketService] Failed to get cookie after connect:", error);
+          // We don't necessarily reject here if the socket is connected, 
+          // but the cookie is important for session.
+          resolve(socketId);
+        }
       });
 
-      this.socket.on("disconnect", () => {
-        console.log("[SocketService] Disconnected");
-        this.handlers.onDisconnect?.();
+      this.socket.on("disconnect", (reason) => {
+        console.log("[SocketService] Disconnected:", reason);
+        if (this.connectTimeout) {
+          clearTimeout(this.connectTimeout);
+          this.connectTimeout = null;
+        }
+
+        store.set(connectionAtom, {
+          socket: null,
+          connecting: false,
+          error: reason === "io client disconnect" ? null : "Disconnected",
+        });
+
+        // Reset room state on disconnect
+        store.set(roomAtom, { id: "", joined: false });
+        store.set(gameStateAtom, null);
       });
 
       this.socket.on("connect_error", (error: Error) => {
         console.error("[SocketService] Connection error:", error);
         this.reconnectAttempts++;
-        if (
-          this.reconnectAttempts >= this.maxReconnectAttempts
-        ) {
+
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          if (this.connectTimeout) {
+            clearTimeout(this.connectTimeout);
+            this.connectTimeout = null;
+          }
           this.socket?.disconnect();
+          this.handleConnectionError(error);
           reject(error);
         }
       });
 
       this.socket.on("updateRoom", (room: gameState) => {
         console.log("[SocketService] Room updated:", room.version);
-        this.handlers.onUpdateRoom?.(room);
+        store.set(gameStateAtom, room);
       });
 
       // Set timeout for connection attempt
-      setTimeout(() => {
-        if (!this.socket?.connected) {
-          reject(
-            new Error(
-              "Connection timeout"
-            )
-          );
+      this.connectTimeout = setTimeout(() => {
+        if (!this.socket?.connected && store.get(connectionAtom).connecting) {
+          const error = new Error("Connection timeout");
+          this.handleConnectionError(error);
+          this.socket?.disconnect();
+          reject(error);
         }
+        this.connectTimeout = null;
       }, 10000);
+    });
+  }
+
+  private handleConnectionError(error: Error) {
+    store.set(connectionAtom, {
+      socket: null,
+      connecting: false,
+      error: error.message,
     });
   }
 
@@ -88,6 +138,7 @@ export class SocketService {
       console.log("[SocketService] Disconnecting...");
       this.socket.disconnect();
       this.socket = null;
+      // Note: the 'disconnect' listener will update the store
     }
   }
 
@@ -99,63 +150,32 @@ export class SocketService {
     return this.socket?.id ?? null;
   }
 
-  async emit<T>(
-    event: string,
-    ...args: any[]
-  ): Promise<T> {
+  async emit<T>(event: string, ...args: any[]): Promise<T> {
     return new Promise((resolve, reject) => {
-      if (!this.socket) {
+      if (!this.socket || !this.socket.connected) {
         reject(new Error("Socket not connected"));
         return;
       }
 
-      console.log(
-        `[SocketService] Emitting event: ${event}`,
-        args
-      );
+      console.log(`[SocketService] Emitting event: ${event}`, args);
 
-      let called = false;
+      let finished = false;
       const timeout = setTimeout(() => {
-        if (!called) {
-          called = true;
-          reject(
-            new Error(
-              `Emit timeout: ${event}`
-            )
-          );
+        if (!finished) {
+          finished = true;
+          reject(new Error(`Emit timeout: ${event}`));
         }
       }, 5000);
 
-      const callback = (data: T) => {
-        if (!called) {
-          called = true;
+      this.socket.emit(event, ...args, (data: T) => {
+        if (!finished) {
+          finished = true;
           clearTimeout(timeout);
-          console.log(
-            `[SocketService] Received response for: ${event}`,
-            data
-          );
+          console.log(`[SocketService] Received response for: ${event}`, data);
           resolve(data);
         }
-      };
-
-      this.socket.emit(event, ...args, callback);
+      });
     });
-  }
-
-  on(event: string, handler: (...args: any[]) => void): void {
-    if (this.socket) {
-      this.socket.on(event, handler);
-    }
-  }
-
-  off(event: string, handler?: (...args: any[]) => void): void {
-    if (this.socket) {
-      if (handler) {
-        this.socket.off(event, handler);
-      } else {
-        this.socket.removeAllListeners(event);
-      }
-    }
   }
 }
 
