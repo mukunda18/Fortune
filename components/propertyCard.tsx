@@ -1,68 +1,45 @@
-import { property, upgradableProperty, buyableProperty, effectProperty } from "@/gameInterfaces/property";
+import { Property, PropertyType, StreetProperty, TransportProperty, UtilityProperty, TaxProperty } from "@/gameInterfaces/property";
 
 interface PropertyCardProps {
-  property: property | upgradableProperty | buyableProperty | effectProperty;
+  property: Property;
+  groupColor?: string;
 }
 
-export function PropertyCard({ property: prop }: PropertyCardProps) {
-  const hasOwner = 'owner' in prop;
-  const hasPrice = 'price' in prop;
-  const hasMortgage = 'mortgaged' in prop;
-  const hasRent = 'rent' in prop;
-  const hasUpgrade = 'level' in prop;
-  const hasEffect = 'effect' in prop;
+export function PropertyCard({ property: prop, groupColor = "#ccc" }: PropertyCardProps) {
+  const isStreet = prop.type === PropertyType.STREET;
+  const isTransport = prop.type === PropertyType.TRANSPORT;
+  const isUtility = prop.type === PropertyType.UTILITY;
+  const isTax = prop.type === PropertyType.TAX;
+  const buyable = "price" in prop ? (prop as StreetProperty | TransportProperty | UtilityProperty) : null;
 
   return (
-    <div>
-      <div>
+    <article>
+      <header style={{ borderTop: `8px solid ${isStreet ? groupColor : "#333"}` }}>
         <h4>{prop.name}</h4>
-        {hasOwner && 'owner' in prop && prop.owner && (
-          <span>
-            {prop.owner}
-          </span>
-        )}
-      </div>
+      </header>
 
-      <p>
-        Group: <span>{prop.group}</span>
-      </p>
-
-      <div>
-        {hasPrice && 'price' in prop && (
-          <div>
-            <p>Price</p>
-            <p>${prop.price}</p>
-          </div>
-        )}
-        {hasUpgrade && 'level' in prop && (
-          <div>
-            <p>Level</p>
-            <p>{prop.level}</p>
-          </div>
-        )}
-        {hasMortgage && 'mortgaged' in prop && (
-          <div>
-            <p>Mortgaged</p>
-            <p>
-              {'mortgaged' in prop && prop.mortgaged ? '❌ Yes' : '✅ No'}
-            </p>
-          </div>
-        )}
-        {hasRent && 'rent' in prop && (
-          <div>
-            <p>Rent</p>
-            <p>
-              ${typeof prop.rent === 'number' ? prop.rent : prop.rent[0]}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {hasEffect && 'effect' in prop && (
-        <div>
-          ✨ {prop.effect}
-        </div>
+      {buyable && (
+        <section>
+          <ul>
+            {isStreet && (prop as StreetProperty).rent.map((r, i) => (
+              <li key={i}>
+                {i === 0 ? "Base" : i === 5 ? "Hotel" : `${i} House`} : ${r}
+              </li>
+            ))}
+            {isTransport && (prop as TransportProperty).rent.map((r, i) => <li key={i}>{i + 1} RR: ${r}</li>)}
+            {isUtility && (prop as UtilityProperty).multipliers.map((m, i) => <li key={i}>{i + 1} Util: {m}x</li>)}
+          </ul>
+          <p>Price: ${buyable.price} | Mortgage: ${buyable.mortgageValue}</p>
+        </section>
       )}
-    </div>
+
+      {isTax && <p>Tax: ${(prop as TaxProperty).amount}</p>}
+
+      {buyable?.owner && (
+        <footer>
+          Owner: {buyable.owner} {buyable.isMortgaged && "(Mortgaged)"}
+        </footer>
+      )}
+    </article>
   );
 }

@@ -1,29 +1,21 @@
-import { gameState } from "@/gameInterfaces/gameState";
+import { GameState } from "@/gameInterfaces/gameState";
 
 interface SettingsSidebarProps {
-  gameState: gameState;
+  gameState: GameState;
 }
 
 export function SettingsSidebar({ gameState }: SettingsSidebarProps) {
   return (
-    <div>
-      <h2>
-        <span>⚙️</span> Settings
-      </h2>
-      <div>
+    <aside>
+      <h3>⚙️ Settings</h3>
+      <ul>
         {Object.entries(gameState.settings).map(([key, value]) => (
-          <div
-            key={key}
-          >
-            <span>
-              {key.replace(/([A-Z])/g, ' $1').trim()}
-            </span>
-            <span>
-              {typeof value === 'boolean' ? (value ? '✅' : '❌') : value.toString()}
-            </span>
-          </div>
+          <li key={key}>
+            {key.replace(/([A-Z])/g, ' $1').trim()}:
+            <strong>{typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}</strong>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </aside>
   );
 }

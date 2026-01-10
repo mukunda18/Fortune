@@ -1,31 +1,25 @@
-import { gameState } from "@/gameInterfaces/gameState";
+import { GameState } from "@/gameInterfaces/gameState";
 
 interface HistorySectionProps {
-  gameState: gameState;
+  gameState: GameState;
 }
 
 export function HistorySection({ gameState }: HistorySectionProps) {
-  if (gameState.gameHistory.length === 0) {
-    return null;
-  }
+  if (gameState.gameHistory.length === 0) return null;
 
   return (
-    <div>
-      <h2>
-        <span>📜</span> Game History ({gameState.gameHistory.length})
-      </h2>
-      <div>
+    <section>
+      <h3>📜 History ({gameState.gameHistory.length})</h3>
+      <ul>
         {gameState.gameHistory
           .slice()
           .reverse()
           .map((entry, index) => (
-            <div
-              key={index}
-            >
-              {JSON.stringify(entry)}
-            </div>
+            <li key={index}>
+              <strong>{entry.player}:</strong> {entry.message}
+            </li>
           ))}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }

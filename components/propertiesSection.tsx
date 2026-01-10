@@ -1,25 +1,23 @@
 import { PropertyCard } from "./propertyCard";
-import { gameState } from "@/gameInterfaces/gameState";
+import { GameState } from "@/gameInterfaces/gameState";
 
 interface PropertiesSectionProps {
-  gameState: gameState;
+  gameState: GameState;
 }
 
 export function PropertiesSection({ gameState }: PropertiesSectionProps) {
-  if (Object.keys(gameState.properties).length === 0) {
-    return null;
-  }
+  const properties = Object.entries(gameState.properties);
+
+  if (properties.length === 0) return null;
 
   return (
-    <div>
-      <h2>
-        <span>🏢</span> Properties ({Object.keys(gameState.properties).length})
-      </h2>
-      <div>
-        {Object.entries(gameState.properties).map(([propId, prop]) => (
-          <PropertyCard key={propId} property={prop} />
+    <section>
+      <h3>🏢 Properties ({properties.length})</h3>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        {properties.map(([id, prop]) => (
+          <PropertyCard key={id} property={prop} />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

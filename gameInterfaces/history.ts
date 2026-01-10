@@ -1,7 +1,7 @@
-export interface history {
+export interface HistoryEntry {
     type: string;
-    data: {
-        player: string;
-        event: string;
-    };
+    timestamp: number;
+    player: string;
+    message: string;
+    payload?: any;
 }

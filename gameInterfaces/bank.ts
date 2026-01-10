@@ -1,3 +1,5 @@
-export interface bank {
-    money: number,
+export interface Bank {
+    money: number;
+    houses: number;
+    hotels: number;
 }

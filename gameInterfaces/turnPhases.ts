@@ -1,1 +1,15 @@
-export enum turnPhase { preGame = "preGame", preRoll = "preRoll", roll = "roll", postRoll = "postRoll" };
+export enum TurnPhase {
+    WAITING_FOR_PLAYERS = "WAITING_FOR_PLAYERS",
+    STARTING_GAME = "STARTING_GAME",
+    PRE_ROLL = "PRE_ROLL",
+    ROLLING = "ROLLING",
+    LANDED_ON_UNOWNED = "LANDED_ON_UNOWNED",
+    LANDED_ON_OWNED = "LANDED_ON_OWNED",
+    LANDED_ON_TAX = "LANDED_ON_TAX",
+    LANDED_ON_SURPRISE = "LANDED_ON_SURPRISE",
+    LANDED_ON_SPECIAL = "LANDED_ON_SPECIAL",
+    AUCTION = "AUCTION",
+    TRADING = "TRADING",
+    JAIL = "JAIL",
+    GAME_OVER = "GAME_OVER"
+}

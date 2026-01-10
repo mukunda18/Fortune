@@ -1,16 +1,17 @@
-import { card } from "./card";
+import { Card } from "./card";
 
-export interface player {
-    name: string,
-    color: string,
-    bankrupted: boolean,
-    money: number,
-    properties: string[],
-    cards: card[],
-    position: number,
-    inJail: boolean,
-    jailTurns: number,
-    turnTime: number,
-    disconnected: boolean,
-    disconnectTime: number,
+export interface Player {
+    id: string;
+    name: string;
+    color: string;
+    money: number;
+    position: number;
+    properties: string[]; // Property IDs
+    cards: Card[];
+    isBankrupt: boolean;
+    inJail: boolean;
+    jailTurns: number;
+    turnTime: number;
+    isDisconnected: boolean;
+    disconnectTime: number;
 }

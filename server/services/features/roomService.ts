@@ -1,5 +1,5 @@
-import { gameState } from "@/gameInterfaces/gameState";
-import { turnPhase } from "@/gameInterfaces/turnPhases";
+import { GameState } from "@/gameInterfaces/gameState";
+import { TurnPhase } from "@/gameInterfaces/turnPhases";
 import { ServerResponse, isServerResponse } from "@/interfaces/serverResponse";
 import { PLAYER_COLORS } from "@/gameInterfaces/color";
 import { BaseService } from "../baseService";
@@ -12,7 +12,7 @@ function randomRoomId(): string {
 
 export class RoomService extends BaseService {
     protected name = "RoomService";
-    private roomMap: Map<string, gameState> = new Map();
+    private roomMap: Map<string, GameState> = new Map();
     private playerToRoomMap: Map<string, string> = new Map();
 
     createRoom(): string {
@@ -25,7 +25,7 @@ export class RoomService extends BaseService {
             admin: "",
             usedColors: [],
             dice: [0, 0],
-            turnPhase: turnPhase.preGame,
+            turnPhase: TurnPhase.WAITING_FOR_PLAYERS,
             players: {},
             currentPlayer: "",
             rollRepeat: 0,
@@ -33,11 +33,13 @@ export class RoomService extends BaseService {
             propertyGroups: {},
             bank: {
                 money: 0,
+                houses: 32,
+                hotels: 12,
             },
             trades: [],
             auction: {
                 active: false,
-                property: "",
+                propertyId: "",
                 highestBid: 0,
                 highestBidder: "",
                 auctionTimer: 0,
@@ -70,7 +72,7 @@ export class RoomService extends BaseService {
         socket: Socket,
         roomName: string,
         playerName: string
-    ): gameState | ServerResponse {
+    ): GameState | ServerResponse {
         const reconnectTry = socketSessionService.getPlayerForSocket(socket.id) === playerName;
         const room = this.roomMap.get(roomName);
         if (!room) {
@@ -80,7 +82,7 @@ export class RoomService extends BaseService {
         if (reconnectTry) {
             const player = room.players[playerName];
             if (player) {
-                player.disconnected = false;
+                player.isDisconnected = false;
                 player.disconnectTime = 0;
                 this.log(`Player ${playerName} reconnected to room ${roomName}`);
                 if (!room.admin) room.admin = playerName;
@@ -99,7 +101,7 @@ export class RoomService extends BaseService {
         if (Object.keys(room.players).length >= room.settings.maxPlayers) {
             return { ok: false, code: "ROOM_FULL", message: "Room is full" };
         }
-        if (room.turnPhase !== turnPhase.preGame) {
+        if (room.turnPhase !== TurnPhase.WAITING_FOR_PLAYERS) {
             return { ok: false, code: "GAME_IN_PROGRESS", message: "Game already in progress" };
         }
 
@@ -129,7 +131,7 @@ export class RoomService extends BaseService {
         this.playerToRoomMap.delete(playerName);
 
         if (room.admin === playerName) {
-            const remainingPlayers = Object.keys(room.players).filter(player => !(room.players[player].bankrupted) && !(room.players[player].disconnected));
+            const remainingPlayers = Object.keys(room.players).filter(player => !(room.players[player].isBankrupt) && !(room.players[player].isDisconnected));
             room.admin = remainingPlayers.length > 0 ? remainingPlayers[0] : "";
         }
 
@@ -155,7 +157,7 @@ export class RoomService extends BaseService {
         const room = this.roomMap.get(roomName);
         if (!room) return;
 
-        room.players[playerName].disconnected = true;
+        room.players[playerName].isDisconnected = true;
         room.players[playerName].disconnectTime = Date.now();
         room.version++;
 
@@ -163,7 +165,7 @@ export class RoomService extends BaseService {
         io.to(roomName).emit("updateRoom", room);
     }
 
-    getRoom(roomId: string): gameState | undefined {
+    getRoom(roomId: string): GameState | undefined {
         return this.roomMap.get(roomId);
     }
 
@@ -177,17 +179,18 @@ export class RoomService extends BaseService {
         usedColors.push(color);
 
         return ({
+            id: Math.random().toString(36).substring(2, 9),
             name: playerName,
             color: color,
             money: 1500,
             properties: [],
             cards: [],
-            bankrupted: false,
+            isBankrupt: false,
             position: 0,
             inJail: false,
             jailTurns: 0,
             turnTime: 0,
-            disconnected: false,
+            isDisconnected: false,
             disconnectTime: 0,
         });
     }

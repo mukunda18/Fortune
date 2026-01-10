@@ -1,24 +1,22 @@
 import { PlayerCard } from "./playerCard";
-import { gameState } from "@/gameInterfaces/gameState";
+import { GameState } from "@/gameInterfaces/gameState";
 
 interface PlayersSectionProps {
-  gameState: gameState;
+  gameState: GameState;
   playerName?: string;
 }
 
 export function PlayersSection({ gameState, playerName }: PlayersSectionProps) {
+  const players = Object.values(gameState.players);
+
   return (
-    <div>
-      <h2>
-        <span>👥</span> Players ({Object.keys(gameState.players).length})
-      </h2>
+    <section>
+      <h3>👥 Players ({players.length})</h3>
       <div>
-        {Object.values(gameState.players).length === 0 ? (
-          <p>
-            No players yet
-          </p>
+        {players.length === 0 ? (
+          <p>No players in room</p>
         ) : (
-          Object.values(gameState.players).map((p) => (
+          players.map((p) => (
             <PlayerCard
               key={p.name}
               player={p}
@@ -29,6 +27,6 @@ export function PlayersSection({ gameState, playerName }: PlayersSectionProps) {
           ))
         )}
       </div>
-    </div>
+    </section>
   );
 }

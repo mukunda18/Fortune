@@ -1,77 +1,73 @@
 export enum PropertyType {
-    UTILITY,
-    TAX,
-    TREASURE,
-    JAIL,
-    GO_TO_JAIL,
-    VACATION,
-    GO
-}
-
-export enum TreasureAction {
-    MOVE_TO,
-    MOVE_STEPS,
-    MOVE_NEAREST,
-    PAY_BANK,
-    PAY_PLAYERS,
-    PAYED_BY_PLAYERS,
-    GO_TO_JAIL,
-    PARDON_CARD,
-    REPAIR
-}
-
-export interface TreasureCard {
-    id: string;
-    description: string;
-    action: TreasureAction;
-    amount?: number;
-    target?: string;
-    subAmount?: number;
+    STREET = "STREET",
+    TRANSPORT = "TRANSPORT",
+    UTILITY = "UTILITY",
+    TAX = "TAX",
+    SURPRISE = "SURPRISE",
+    GO = "GO",
+    JAIL = "JAIL",
+    GO_TO_JAIL = "GO_TO_JAIL",
+    PARKING = "PARKING"
 }
 
 export interface propertyGroup {
+    id: string;
     name: string;
     color: string;
-    properties: string[];
+    properties: string[]; // Property IDs
 }
 
-export interface baseProperty {
+export interface BaseProperty {
     id: string;
     name: string;
     type: PropertyType;
     position: number;
 }
 
-export interface taxProperty extends baseProperty {
-    type: PropertyType.TAX;
-    taxAmount: number;
-}
-
-export interface treasureProperty extends baseProperty {
-    type: PropertyType.TREASURE;
-}
-
-export interface jailProperty extends baseProperty {
-    type: PropertyType.JAIL;
-}
-
-// Buyable Properties
-
-export interface buyableProperty extends baseProperty {
-    group: string; // Group ID
+export interface BuyableProperty extends BaseProperty {
     price: number;
-    baseRent: number;
+    mortgageValue: number;
     owner: string | null;
-    mortgaged: boolean;
+    isMortgaged: boolean;
+    groupId: string;
 }
 
-export interface utilityProperty extends buyableProperty {
+export interface StreetProperty extends BuyableProperty {
+    type: PropertyType.STREET;
+    rent: number[];
+    housePrice: number;
+    houses: number;
+}
+
+export interface TransportProperty extends BuyableProperty {
+    type: PropertyType.TRANSPORT;
+    rent: number[];
+}
+
+export interface UtilityProperty extends BuyableProperty {
     type: PropertyType.UTILITY;
+    multipliers: number[];
+}
+
+export interface TaxProperty extends BaseProperty {
+    type: PropertyType.TAX;
+    amount: number;
+}
+
+export interface SurpriseProperty extends BaseProperty {
+    type: PropertyType.SURPRISE;
+    surpriseType: "CHANCE" | "CHEST";
+}
+
+export interface SpecialProperty extends BaseProperty {
+    type: PropertyType.GO | PropertyType.JAIL | PropertyType.GO_TO_JAIL | PropertyType.PARKING;
 }
 
 export type Property =
-    | utilityProperty
-    | taxProperty
-    | treasureProperty
-    | jailProperty
-    | baseProperty;
+    | StreetProperty
+    | TransportProperty
+    | UtilityProperty
+    | TaxProperty
+    | SurpriseProperty
+    | SpecialProperty;
+

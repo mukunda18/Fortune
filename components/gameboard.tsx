@@ -16,38 +16,31 @@ export default function GameStateViewer() {
 
   if (!gameState) {
     return (
-      <div>
-        <div>
-          <div>🎲</div>
-          <p>Loading game state...</p>
-        </div>
-      </div>
+      <main>
+        <h3>🎲 Loading game state...</h3>
+      </main>
     );
   }
 
   return (
-    <div>
+    <main>
       <GameStatsRow gameState={gameState} />
 
-      <div>
-        <div>
-          <PlayersSection gameState={gameState} playerName={playerName} />
-        </div>
+      <section>
+        <PlayersSection gameState={gameState} playerName={playerName} />
         <SettingsSidebar gameState={gameState} />
-      </div>
+      </section>
 
       <PropertiesSection gameState={gameState} />
-
       <HistorySection gameState={gameState} />
 
       {gameState.gameHistory.length === 0 && Object.keys(gameState.properties).length === 0 && (
-        <div>
-          <p>🎮 Game not started yet</p>
-          <p>Waiting for game to begin...</p>
-        </div>
+        <section>
+          <p>🎮 Game not started yet. Waiting for players...</p>
+        </section>
       )}
 
       <DebugInfo gameState={gameState} />
-    </div>
+    </main>
   );
 }

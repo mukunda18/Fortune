@@ -7,14 +7,9 @@ interface StatCardProps {
 
 export function StatCard({ title, value, icon, color }: StatCardProps) {
   return (
-    <div>
-      <p>
-        {title}
-      </p>
-      <p>
-        <span>{icon}</span>
-        {value}
-      </p>
+    <div style={{ borderLeft: `4px solid ${color}`, padding: '8px' }}>
+      <strong>{icon} {title}</strong>
+      <span>{value}</span>
     </div>
   );
 }

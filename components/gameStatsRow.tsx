@@ -1,33 +1,33 @@
 import { StatCard } from "./statCard";
-import { gameState } from "@/gameInterfaces/gameState";
+import { GameState } from "@/gameInterfaces/gameState";
 
 interface GameStatsRowProps {
-  gameState: gameState;
+  gameState: GameState;
 }
 
 export function GameStatsRow({ gameState }: GameStatsRowProps) {
   return (
-    <div>
+    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
       <StatCard
-        title="Current Player"
-        value={gameState.currentPlayer || "Waiting..."}
+        title="Player"
+        value={gameState.currentPlayer || "..."}
         icon="👤"
         color="blue"
       />
       <StatCard
-        title="Turn Phase"
+        title="Phase"
         value={gameState.turnPhase}
         icon="🎯"
         color="purple"
       />
       <StatCard
-        title="Dice Rolls"
+        title="Dice"
         value={`${gameState.dice[0]} + ${gameState.dice[1]}`}
         icon="🎲"
         color="green"
       />
       <StatCard
-        title="Roll Repeat"
+        title="Rolls"
         value={gameState.rollRepeat.toString()}
         icon="🔄"
         color="orange"

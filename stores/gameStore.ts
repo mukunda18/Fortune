@@ -1,5 +1,4 @@
 import { atom } from "jotai"
-import { gameState } from "@/gameInterfaces/gameState"
+import { GameState } from "@/gameInterfaces/gameState"
 
-export const gameStateAtom = atom<gameState | null>(null,
-);
+export const gameStateAtom = atom<GameState | null>(null);
