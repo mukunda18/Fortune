@@ -8,6 +8,8 @@ export class SocketService extends BaseService {
     protected name = "SocketService";
     private socket: Socket | null = null;
 
+    private listenerBuffer: Map<string, Array<(...args: any[]) => void>> = new Map();
+
     async connect(): Promise<string> {
         const currentSocketId = this.store.get(connectionAtom).socket;
         const isConnecting = this.store.get(connectionAtom).connecting;
@@ -28,6 +30,10 @@ export class SocketService extends BaseService {
 
             this.socket = io({
                 withCredentials: true,
+            });
+
+            this.listenerBuffer.forEach((callbacks, event) => {
+                callbacks.forEach(cb => this.socket?.on(event, cb));
             });
 
             this.socket.on("connect", async () => {
@@ -120,16 +126,32 @@ export class SocketService extends BaseService {
     }
 
     on(event: string, callback: (...args: any[]) => void): void {
-        if (!this.socket) {
-            this.warn(`Attempted to register listener for ${event} before socket initialization`);
-            return;
+        if (this.socket) {
+            this.socket.on(event, callback);
         }
-        this.socket.on(event, callback);
+
+        // Always buffer the listener so it persists across re-connections
+        const listeners = this.listenerBuffer.get(event) || [];
+        listeners.push(callback);
+        this.listenerBuffer.set(event, listeners);
     }
 
     off(event: string, callback?: (...args: any[]) => void): void {
-        if (!this.socket) return;
-        this.socket.off(event, callback);
+        if (this.socket) {
+            this.socket.off(event, callback);
+        }
+
+        if (callback) {
+            const listeners = this.listenerBuffer.get(event) || [];
+            const newListeners = listeners.filter(l => l !== callback);
+            if (newListeners.length > 0) {
+                this.listenerBuffer.set(event, newListeners);
+            } else {
+                this.listenerBuffer.delete(event);
+            }
+        } else {
+            this.listenerBuffer.delete(event);
+        }
     }
 
     async emit<T>(event: string, ...args: any[]): Promise<T> {
