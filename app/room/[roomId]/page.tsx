@@ -8,8 +8,7 @@ import {
   connectingAtom,
   playerNameAtom,
 } from "@/stores/roomStore";
-import { roomService } from "@/services/roomService";
-import { socketService } from "@/services/socketService";
+import { roomService, socketService } from "@/services";
 import GameStateViewer from "@/components/gameboard";
 
 export default function RoomPage() {

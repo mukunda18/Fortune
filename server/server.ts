@@ -1,10 +1,9 @@
 import express from "express";
 import http from "http";
-import { Server as SocketIOServer, Socket } from "socket.io";
-import { connectionHandler } from "./connectionHandler";
+import { Server as SocketIOServer } from "socket.io";
 import cookieParser from "cookie-parser";
 import cookie from "cookie";
-import { sessionTokenService } from "./services/sessionTokenService";
+import { sessionTokenService, roomService, socketSessionService } from "./services";
 
 const expressApp = express();
 const server = http.createServer(expressApp);
@@ -24,7 +23,25 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
     console.log(`[Server] New socket connection initialized: ${socket.id}`);
-    connectionHandler(io, socket);
+
+    socket.on("disconnect", () => {
+        console.log(`[Server] Client disconnected: ${socket.id}`);
+        roomService.disconnect(io, socket.id);
+    });
+
+    socket.on("joinRoom", (roomId: string, playerName: string, callback: Function) => {
+        console.log(`[Server] joinRoom request: socket=${socket.id}, room=${roomId}, player=${playerName}`);
+        const response = roomService.joinRoom(io, socket, roomId, playerName);
+        callback(response);
+    });
+
+    socket.on("leaveRoom", () => {
+        const playerName = socketSessionService.getPlayerForSocket(socket.id);
+        if (playerName) {
+            console.log(`[Server] leaveRoom request: socket=${socket.id}, player=${playerName}`);
+            roomService.leaveRoom(playerName, io, socket);
+        }
+    });
 });
 
 export { expressApp, server, io };

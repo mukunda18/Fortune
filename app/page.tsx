@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAtom } from "jotai";
 import { playerNameAtom } from "@/stores/roomStore";
-import { roomService } from "@/services/roomService";
+import { roomService } from "@/services";
 
 export default function Home() {
   const [roomInput, setRoomInput] = useState("");

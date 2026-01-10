@@ -1,5 +1,5 @@
 import { player } from "./player";
-import { property, propertyGroup } from "./property";
+import { Property, propertyGroup } from "./property";
 import { trade } from "./trade";
 import { setting } from "./setting";
 import { turnPhase } from "./turnPhases";
@@ -15,7 +15,7 @@ export interface gameState {
     players: { [key: string]: player },
     currentPlayer: string,
     rollRepeat: number,
-    properties: { [key: string]: property },
+    properties: { [key: string]: Property },
     propertyGroups: { [key: string]: propertyGroup },
     bank: bank,
     trades: trade[],

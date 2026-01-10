@@ -1,8 +1,7 @@
 import next from "next"
 import dotenv from "dotenv"
 import { expressApp, server } from "./server"
-import { roomService } from "./services/roomService"
-import { sessionTokenService } from "./services/sessionTokenService"
+import { roomService, sessionTokenService } from "./services";
 
 
 dotenv.config()
