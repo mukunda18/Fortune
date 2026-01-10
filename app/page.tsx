@@ -23,20 +23,12 @@ export default function Home() {
   }, []);
 
   const handleJoinRoom = async () => {
-    if (!playerInput.trim() || !roomInput.trim()) {
-      setError("Please enter name and room ID");
-      return;
-    }
     setIsLoading(true);
     setPlayerName(playerInput);
     router.push(`/room/${roomInput}`);
   };
 
   const handleCreateRoom = async () => {
-    if (!playerInput.trim()) {
-      setError("Please enter a player name");
-      return;
-    }
     setIsLoading(true);
     try {
       const roomId = await roomService.createRoom();

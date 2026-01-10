@@ -1,10 +1,9 @@
 import { GameState } from "@/gameInterfaces/gameState";
-import { TurnPhase } from "@/gameInterfaces/turnPhases";
-import { ServerResponse, isServerResponse } from "@/interfaces/serverResponse";
-import { PLAYER_COLORS } from "@/gameInterfaces/color";
+import { ServerResponse } from "@/interfaces/serverResponse";
 import { BaseService } from "../baseService";
 import type { Server, Socket } from "socket.io";
 import { socketSessionService } from "../core/socketSessionService";
+import { GameService } from "./gameService";
 
 function randomRoomId(): string {
     return Math.random().toString(36).substring(2, 8);
@@ -12,7 +11,7 @@ function randomRoomId(): string {
 
 export class RoomService extends BaseService {
     protected name = "RoomService";
-    private roomMap: Map<string, GameState> = new Map();
+    private roomMap: Map<string, GameService> = new Map();
     private playerToRoomMap: Map<string, string> = new Map();
 
     createRoom(): string {
@@ -21,45 +20,8 @@ export class RoomService extends BaseService {
             roomId = randomRoomId();
         }
 
-        this.roomMap.set(roomId, {
-            admin: "",
-            usedColors: [],
-            dice: [0, 0],
-            turnPhase: TurnPhase.WAITING_FOR_PLAYERS,
-            players: {},
-            currentPlayer: "",
-            rollRepeat: 0,
-            properties: {},
-            propertyGroups: {},
-            bank: {
-                money: 0,
-            },
-            trades: [],
-            auction: {
-                active: false,
-                propertyId: "",
-                highestBid: 0,
-                highestBidder: "",
-                auctionTimer: 0,
-                log: [],
-            },
-            settings: {
-                minPlayers: 2,
-                maxPlayers: 8,
-                privateRoom: false,
-                allowBots: false,
-                doubleRentOnFullSet: false,
-                vacationCash: false,
-                auction: false,
-                noRentInPrison: false,
-                mortgage: false,
-                evenBuild: false,
-                startingCash: 1500,
-                randomizePlayerOrder: false,
-            },
-            gameHistory: [],
-            version: 0,
-        });
+        const gameService = new GameService(roomId);
+        this.roomMap.set(roomId, gameService);
 
         this.log(`Room created: ${roomId}`);
         return roomId;
@@ -71,48 +33,40 @@ export class RoomService extends BaseService {
         roomName: string,
         playerName: string
     ): GameState | ServerResponse {
-        const reconnectTry = socketSessionService.getPlayerForSocket(socket.id) === playerName;
-        const room = this.roomMap.get(roomName);
-        if (!room) {
+        const gameService = this.roomMap.get(roomName);
+        if (!gameService) {
             return { ok: false, code: "ROOM_NOT_FOUND", message: "Room not found" };
         }
 
-        if (reconnectTry) {
-            const player = room.players[playerName];
-            if (player) {
-                player.isDisconnected = false;
-                player.disconnectTime = 0;
-                this.log(`Player ${playerName} reconnected to room ${roomName}`);
-                if (!room.admin) room.admin = playerName;
-                room.version++;
-
-                socket.join(roomName);
-                socketSessionService.mapSocketToPlayer(socket.id, playerName);
-                socket.to(roomName).emit("updateRoom", room);
-
-                return room;
-            } else if (this.playerToRoomMap.get(playerName) !== roomName) {
-                this.leaveRoom(playerName, io, socket);
+        const prevPlayerName = socketSessionService.getPlayerForSocket(socket.id);
+        if (prevPlayerName) {
+            const previousRoom = this.playerToRoomMap.get(prevPlayerName);
+            if (previousRoom && previousRoom !== roomName) {
+                this.leaveRoom(prevPlayerName, io, socket);
             }
         }
 
-        if (Object.keys(room.players).length >= room.settings.maxPlayers) {
-            return { ok: false, code: "ROOM_FULL", message: "Room is full" };
+        const nameToUse = prevPlayerName || playerName || "";
+
+        const result = gameService.addPlayer(nameToUse);
+
+        if (!result.success) {
+            return { ok: false, code: "JOIN_FAILED", message: result.message || "Failed to join room" };
         }
-        if (room.turnPhase !== TurnPhase.WAITING_FOR_PLAYERS) {
-            return { ok: false, code: "GAME_IN_PROGRESS", message: "Game already in progress" };
+
+        const finalName = result.name || nameToUse;
+        const room = gameService.gameState;
+
+        this.playerToRoomMap.set(finalName, roomName);
+
+        if (finalName !== playerName) {
+            socket.emit("changePlayerName", finalName);
         }
 
-        room.players[playerName] = this.createPlayer(playerName, room.usedColors);
-        this.playerToRoomMap.set(playerName, roomName);
-
-        if (!room.admin) room.admin = playerName;
-
-        this.log(`Player ${playerName} joined room ${roomName}`);
         room.version++;
 
         socket.join(roomName);
-        socketSessionService.mapSocketToPlayer(socket.id, playerName);
+        socketSessionService.mapSocketToPlayer(socket.id, finalName);
         socket.to(roomName).emit("updateRoom", room);
 
         return room;
@@ -121,19 +75,14 @@ export class RoomService extends BaseService {
     leaveRoom(playerName: string, io?: Server, socket?: Socket): string {
         const roomName = this.playerToRoomMap.get(playerName);
         if (!roomName) return "";
-        const room = this.roomMap.get(roomName);
-        if (!room) return "";
+        const gameService = this.roomMap.get(roomName);
+        if (!gameService) return "";
 
-        room.usedColors = room.usedColors.filter(color => color !== room.players[playerName]?.color);
-        delete room.players[playerName];
+        gameService.removePlayer(playerName);
         this.playerToRoomMap.delete(playerName);
 
-        if (room.admin === playerName) {
-            const remainingPlayers = Object.keys(room.players).filter(player => !(room.players[player].isBankrupt) && !(room.players[player].isDisconnected));
-            room.admin = remainingPlayers.length > 0 ? remainingPlayers[0] : "";
-        }
+        const room = gameService.gameState;
 
-        this.log(`Player ${playerName} left room ${roomName}`);
         room.version++;
 
         if (socket && io) {
@@ -152,44 +101,19 @@ export class RoomService extends BaseService {
         const roomName = this.playerToRoomMap.get(playerName);
         if (!roomName) return;
 
-        const room = this.roomMap.get(roomName);
-        if (!room) return;
+        const gameService = this.roomMap.get(roomName);
+        if (!gameService) return;
 
-        room.players[playerName].isDisconnected = true;
-        room.players[playerName].disconnectTime = Date.now();
+        gameService.disconnectPlayer(playerName);
+
+        const room = gameService.gameState;
         room.version++;
 
-        this.log(`Player ${playerName} disconnected from room ${roomName}`);
         io.to(roomName).emit("updateRoom", room);
     }
 
     getRoom(roomId: string): GameState | undefined {
-        return this.roomMap.get(roomId);
-    }
-
-    getRoomForPlayer(playerName: string): string {
-        return this.playerToRoomMap.get(playerName) || "";
-    }
-
-    createPlayer(playerName: string, usedColors: string[] = []) {
-        const availableColors = PLAYER_COLORS.filter(color => !usedColors.includes(color));
-        const color = availableColors.length > 0 ? availableColors[0] : "nothing";
-        usedColors.push(color);
-
-        return ({
-            name: playerName,
-            color: color,
-            money: 1500,
-            properties: [],
-            cards: [],
-            isBankrupt: false,
-            position: 0,
-            inJail: false,
-            jailTurns: 0,
-            turnTime: 0,
-            isDisconnected: false,
-            disconnectTime: 0,
-        });
+        return this.roomMap.get(roomId)?.gameState;
     }
 }
 

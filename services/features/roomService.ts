@@ -20,6 +20,10 @@ export class RoomService extends BaseService {
             this.log("Room updated:", room.version);
             this.store.set(gameStateAtom, room);
         });
+        socketService.on("changePlayerName", (playerName: string) => {
+            this.log("Player name changed:", playerName);
+            this.store.set(playerNameAtom, playerName);
+        });
     }
 
     async createRoom(): Promise<string> {
