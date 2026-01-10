@@ -12,7 +12,6 @@ import {
 } from "@/stores/roomStore";
 import { roomService, socketService } from "@/services";
 
-import GameStateViewer from "@/components/gameboard";
 
 export default function RoomPage() {
   const params = useParams();
@@ -42,39 +41,49 @@ export default function RoomPage() {
     if (!roomId) return;
     setError("");
     setIsJoining(true);
+
     try {
       await roomService.joinRoom(roomId);
       setIsJoining(false);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to join room");
+      setError("Failed to join room");
       setIsJoining(false);
     }
   };
 
   return (
-    <article>
-      <header>
-        <h2>🎮 Room: {roomId}</h2>
-        <p>Player: {playerName}</p>
-        <p>Status: {room.joined ? '✅ Joined' : '⏳ Waiting'}</p>
-        <button onClick={handleLeaveRoom} disabled={connecting || isJoining}>Leave</button>
-      </header>
+    <div>
+      <h1>Room Lobby</h1>
+      <p>Room ID: {roomId}</p>
+      <button onClick={handleLeaveRoom} disabled={connecting || isJoining}>
+        Leave Room
+      </button>
 
-      {error && <p style={{ color: 'red' }}>⚠️ {error}</p>}
-      {connectionError && <p style={{ color: 'red' }}>⚠️ Connection Error: {connectionError}</p>}
+      <div>
+        <p>Playing as: {playerName || "Guest"}</p>
+      </div>
+
+      {(error || connectionError) && (
+        <div>
+          <strong>Connection Error:</strong>
+          <p>{error || connectionError}</p>
+        </div>
+      )}
+
       {connecting && <p>Connecting to server...</p>}
 
       {!room.joined && !connecting && (
-        <section>
-          <h3>Ready to Join?</h3>
-          <p>Click below to start playing</p>
+        <div>
+          <h2>Ready to Play?</h2>
           <button onClick={handleJoinRoom} disabled={isJoining}>
-            {isJoining ? "Joining..." : "🚀 Join Room Now"}
+            {isJoining ? "Joining..." : "Join Room"}
           </button>
-        </section>
+        </div>
       )}
 
-      {room.joined && <GameStateViewer />}
-    </article>
+      <footer>
+        <p>Once you join, you'll see the game board and other players</p>
+      </footer>
+    </div>
   );
 }

@@ -14,13 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <header>
-          <h1>🎲 Fortune</h1>
-        </header>
-        <main>{children}</main>
-        <footer>
-          <p>© 2026 Fortune</p>
-        </footer>
+        {children}
       </body>
     </html>
   );

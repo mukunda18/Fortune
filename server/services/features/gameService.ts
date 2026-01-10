@@ -2,6 +2,7 @@ import { TurnPhase } from "@/gameInterfaces/turnPhases";
 import { BaseService } from "../baseService";
 import { GameState } from "@/gameInterfaces/gameState";
 import { PLAYER_COLORS } from "@/gameInterfaces/color";
+import { PROPERTIES, PROPERTY_GROUPS } from "./locations";
 
 const DEFAULT_NAMES = [
     "ShadowVex", "NeonRaptor", "VoidStrike", "FrostByte", "DarkPulse",
@@ -26,8 +27,8 @@ export class GameService extends BaseService {
             players: {},
             currentPlayer: "",
             rollRepeat: 0,
-            properties: {},
-            propertyGroups: {},
+            properties: JSON.parse(JSON.stringify(PROPERTIES)),
+            propertyGroups: JSON.parse(JSON.stringify(PROPERTY_GROUPS)),
             bank: {
                 money: 0,
             },

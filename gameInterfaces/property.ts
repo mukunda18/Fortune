@@ -1,24 +1,23 @@
 export enum PropertyType {
-    STREET = "STREET",
-    TRANSPORT = "TRANSPORT",
-    UTILITY = "UTILITY",
-    TAX = "TAX",
-    SURPRISE = "SURPRISE",
-    GO = "GO",
-    JAIL = "JAIL",
-    GO_TO_JAIL = "GO_TO_JAIL",
-    PARKING = "PARKING"
+    STREET = "STREET", // houses in single group 
+    TRANSPORT = "TRANSPORT", //airplanes in single group
+    UTILITY = "UTILITY", // electricty and water under each grp
+    TAX = "TAX", //luxury fixed and income tax percentage
+    SURPRISE = "SURPRISE", // payed money by other or paying to others
+    CHEST = "CHEST", // money or pardon card
+    CHANCE = "CHANCE", // go to jail effect or repair effect
+    GO = "GO", // money giving effect if landed and less if skipped over
+    JAIL = "JAIL", // jail
+    VACATION = "VACATION" // get bank money effect and rest for certain number turns
 }
 
-export interface propertyGroup {
-    id: string;
+export interface PropertyGroup {
     name: string;
     color: string;
     properties: string[]; // Property IDs
 }
 
 export interface BaseProperty {
-    id: string;
     name: string;
     type: PropertyType;
     position: number;
@@ -49,18 +48,35 @@ export interface UtilityProperty extends BuyableProperty {
     multipliers: number[];
 }
 
+
 export interface TaxProperty extends BaseProperty {
     type: PropertyType.TAX;
-    amount: number;
+    amount?: number;
+    percentage?: number;
 }
 
 export interface SurpriseProperty extends BaseProperty {
     type: PropertyType.SURPRISE;
-    surpriseType: "CHANCE" | "CHEST";
 }
 
-export interface SpecialProperty extends BaseProperty {
-    type: PropertyType.GO | PropertyType.JAIL | PropertyType.GO_TO_JAIL | PropertyType.PARKING;
+export interface ChestProperty extends BaseProperty {
+    type: PropertyType.CHEST;
+}
+
+export interface ChanceProperty extends BaseProperty {
+    type: PropertyType.CHANCE;
+}
+
+export interface GoProperty extends BaseProperty {
+    type: PropertyType.GO;
+}
+
+export interface JailProperty extends BaseProperty {
+    type: PropertyType.JAIL;
+}
+
+export interface VacationProperty extends BaseProperty {
+    type: PropertyType.VACATION;
 }
 
 export type Property =
@@ -69,5 +85,9 @@ export type Property =
     | UtilityProperty
     | TaxProperty
     | SurpriseProperty
-    | SpecialProperty;
+    | ChestProperty
+    | ChanceProperty
+    | GoProperty
+    | JailProperty
+    | VacationProperty;
 

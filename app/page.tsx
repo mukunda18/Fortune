@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAtom } from "jotai";
 import { playerNameAtom } from "@/stores/roomStore";
-import { roomService } from "@/services";
+import { apiService } from "@/services";
 
 export default function Home() {
   const [roomInput, setRoomInput] = useState("");
@@ -23,17 +23,21 @@ export default function Home() {
   }, []);
 
   const handleJoinRoom = async () => {
+    if (!roomInput.trim()) {
+      setError("Please enter a room ID");
+      return;
+    }
     setIsLoading(true);
-    setPlayerName(playerInput);
+    setPlayerName(playerInput.trim());
     router.push(`/room/${roomInput}`);
   };
 
   const handleCreateRoom = async () => {
     setIsLoading(true);
     try {
-      const roomId = await roomService.createRoom();
+      const roomId = await apiService.createRoom();
       if (!roomId) throw new Error();
-      setPlayerName(playerInput);
+      setPlayerName(playerInput.trim());
       router.push(`/room/${roomId}`);
     } catch {
       setError("Failed to create room");
@@ -42,47 +46,65 @@ export default function Home() {
   };
 
   return (
-    <section>
-      <h2>🎲 Welcome to Fortune</h2>
+    <div>
+      <div>
+        <h1>FORTUNE</h1>
+      </div>
 
-      <p>
-        <label>Your Name: </label>
-        <input
-          type="text"
-          value={playerInput}
-          onChange={e => setPlayerInput(e.target.value)}
-          disabled={isLoading}
-        />
-      </p>
-
-      {error && <p style={{ color: 'red' }}>⚠️ {error}</p>}
-
-      <section>
-        <button onClick={handleCreateRoom} disabled={isLoading}>
-          {isLoading ? "Creating..." : "✨ Create New Room"}
-        </button>
-      </section>
-
-      <hr />
-
-      <section>
-        <p>
-          <label>Room ID: </label>
+      <div>
+        <label>
+          Your Name
           <input
             type="text"
-            value={roomInput}
-            onChange={e => setRoomInput(e.target.value)}
+            value={playerInput}
+            onChange={e => {
+              setPlayerInput(e.target.value);
+              setError("");
+            }}
             disabled={isLoading}
+            placeholder="Enter your player name..."
+            maxLength={20}
           />
-        </p>
-        <button onClick={handleJoinRoom} disabled={isLoading}>
-          {isLoading ? "Joining..." : "🚪 Join Room"}
-        </button>
-      </section>
+        </label>
+
+        {error && (
+          <div>
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        <div>
+          <button onClick={handleCreateRoom} disabled={isLoading}>
+            {isLoading ? "Creating Room..." : "Create New Room"}
+          </button>
+        </div>
+
+        <div>
+          <label>
+            Room ID
+            <input
+              type="text"
+              value={roomInput}
+              onChange={e => {
+                setRoomInput(e.target.value);
+                setError("");
+              }}
+              disabled={isLoading}
+              placeholder="Enter room code..."
+              maxLength={30}
+            />
+          </label>
+
+          <button onClick={handleJoinRoom} disabled={isLoading}>
+            {isLoading ? "Joining Room..." : "Join Room"}
+          </button>
+        </div>
+      </div>
 
       <footer>
-        <p>ℹ️ Info: Create a room or join with a room ID. Play with up to 8 players.</p>
+        <p>2-8 Players | Online Multiplayer | Real-time</p>
+        <p>Build your empire, bankrupt your opponents, dominate the board</p>
       </footer>
-    </section>
+    </div>
   );
 }
