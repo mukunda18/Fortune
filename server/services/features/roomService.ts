@@ -177,7 +177,6 @@ export class RoomService extends BaseService {
         usedColors.push(color);
 
         return ({
-            id: Math.random().toString(36).substring(2, 9),
             name: playerName,
             color: color,
             money: 1500,
