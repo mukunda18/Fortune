@@ -33,8 +33,6 @@ export class RoomService extends BaseService {
             propertyGroups: {},
             bank: {
                 money: 0,
-                houses: 32,
-                hotels: 12,
             },
             trades: [],
             auction: {

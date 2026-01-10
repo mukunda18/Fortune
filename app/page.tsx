@@ -23,193 +23,74 @@ export default function Home() {
   }, []);
 
   const handleJoinRoom = async () => {
-    setError("");
-
-    if (!playerInput.trim()) {
-      setError("Please enter a player name");
+    if (!playerInput.trim() || !roomInput.trim()) {
+      setError("Please enter name and room ID");
       return;
     }
-    if (!roomInput.trim()) {
-      setError("Please enter a room ID");
-      return;
-    }
-
     setIsLoading(true);
-    try {
-      setPlayerName(playerInput);
-      router.push(`/room/${roomInput}`);
-    } catch (err) {
-      setError("Failed to join room. Please try again.");
-      setIsLoading(false);
-    }
+    setPlayerName(playerInput);
+    router.push(`/room/${roomInput}`);
   };
 
   const handleCreateRoom = async () => {
-    setError("");
-
     if (!playerInput.trim()) {
       setError("Please enter a player name");
       return;
     }
-
     setIsLoading(true);
     try {
       const roomId = await roomService.createRoom();
-      if (!roomId) {
-        setError("Failed to create room. Please try again.");
-        return;
-      }
+      if (!roomId) throw new Error();
       setPlayerName(playerInput);
       router.push(`/room/${roomId}`);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to create room. Please try again.");
+    } catch {
+      setError("Failed to create room");
       setIsLoading(false);
     }
   };
 
   return (
-    <div>
-      <div>
-        {/* Welcome Section */}
-        <div>
-          <div>
-            <span>🎲</span>
-          </div>
-          <h1>
-            Welcome to Fortune
-          </h1>
-          <p>
-            A multiplayer board game experience
-          </p>
-        </div>
+    <section>
+      <h2>🎲 Welcome to Fortune</h2>
 
-        {/* Main Card */}
-        <div>
-          {/* Player Name Input */}
-          <div>
-            <label>
-              Your Name
-            </label>
-            <input
-              type="text"
-              placeholder="Enter your player name"
-              value={playerInput}
-              onChange={(e) => {
-                setPlayerInput(e.target.value);
-                setError("");
-              }}
-              disabled={isLoading}
-            />
-          </div>
+      <p>
+        <label>Your Name: </label>
+        <input
+          type="text"
+          value={playerInput}
+          onChange={e => setPlayerInput(e.target.value)}
+          disabled={isLoading}
+        />
+      </p>
 
-          {/* Error Message */}
-          {error && (
-            <div>
-              ⚠️ {error}
-            </div>
-          )}
+      {error && <p style={{ color: 'red' }}>⚠️ {error}</p>}
 
-          {/* Divider */}
-          <div>
-            <div>
-              <div></div>
-            </div>
-            <div>
-              <span>
-                or
-              </span>
-            </div>
-          </div>
+      <section>
+        <button onClick={handleCreateRoom} disabled={isLoading}>
+          {isLoading ? "Creating..." : "✨ Create New Room"}
+        </button>
+      </section>
 
-          {/* Create Room Section */}
-          <div>
-            <button
-              onClick={handleCreateRoom}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <div></div>
-                  Creating...
-                </>
-              ) : (
-                <>
-                  ✨ Create New Room
-                </>
-              )}
-            </button>
-            <p>
-              Start a new game and invite friends
-            </p>
-          </div>
+      <hr />
 
-          {/* Divider */}
-          <div>
-            <div>
-              <div></div>
-            </div>
-            <div>
-              <span>
-                Join Existing
-              </span>
-            </div>
-          </div>
-
-          {/* Join Room Section */}
-          <div>
-            <label>
-              Room ID
-            </label>
-            <input
-              type="text"
-              placeholder="Enter room ID (e.g., abc123)"
-              value={roomInput}
-              onChange={(e) => {
-                setRoomInput(e.target.value);
-                setError("");
-              }}
-              disabled={isLoading}
-            />
-          </div>
-
-          <button
-            onClick={handleJoinRoom}
+      <section>
+        <p>
+          <label>Room ID: </label>
+          <input
+            type="text"
+            value={roomInput}
+            onChange={e => setRoomInput(e.target.value)}
             disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <div></div>
-                Joining...
-              </>
-            ) : (
-              <>
-                🚪 Join Room
-              </>
-            )}
-          </button>
-        </div>
+          />
+        </p>
+        <button onClick={handleJoinRoom} disabled={isLoading}>
+          {isLoading ? "Joining..." : "🚪 Join Room"}
+        </button>
+      </section>
 
-        {/* Info Section */}
-        <div>
-          <div>
-            <p>
-              ℹ️ How to Play
-            </p>
-            <p>
-              Create a room or join with a room ID to start playing with friends.
-            </p>
-          </div>
-          <div>
-            <p>
-              👥 Multiplayer
-            </p>
-            <p>
-              Play with up to 8 players in real-time.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <footer>
+        <p>ℹ️ Info: Create a room or join with a room ID. Play with up to 8 players.</p>
+      </footer>
+    </section>
   );
 }

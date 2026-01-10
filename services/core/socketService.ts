@@ -7,15 +7,12 @@ import { BaseService } from "../baseService";
 export class SocketService extends BaseService {
     protected name = "SocketService";
     private socket: Socket | null = null;
-    private reconnectAttempts = 0;
-    private maxReconnectAttempts = 5;
-    private connectTimeout: NodeJS.Timeout | null = null;
 
     async connect(): Promise<string> {
         const currentSocketId = this.store.get(connectionAtom).socket;
         const isConnecting = this.store.get(connectionAtom).connecting;
 
-        if (currentSocketId || isConnecting) {
+        if ((currentSocketId || isConnecting) && this.socket) {
             this.log("Already connected or connecting");
             return currentSocketId || "";
         }
@@ -34,10 +31,6 @@ export class SocketService extends BaseService {
             });
 
             this.socket.on("connect", async () => {
-                if (this.connectTimeout) {
-                    clearTimeout(this.connectTimeout);
-                    this.connectTimeout = null;
-                }
 
                 if (!this.socket?.id) {
                     const error = new Error("Socket connected but no ID");
@@ -49,7 +42,6 @@ export class SocketService extends BaseService {
                 const socketId = this.socket.id;
                 this.log("Connected with ID:", socketId);
 
-                this.reconnectAttempts = 0;
 
                 this.store.set(connectionAtom, {
                     socket: socketId,
@@ -71,10 +63,6 @@ export class SocketService extends BaseService {
 
             this.socket.on("disconnect", (reason) => {
                 this.log("Disconnected:", reason);
-                if (this.connectTimeout) {
-                    clearTimeout(this.connectTimeout);
-                    this.connectTimeout = null;
-                }
 
                 this.store.set(connectionAtom, {
                     socket: null,
@@ -89,29 +77,15 @@ export class SocketService extends BaseService {
 
             this.socket.on("connect_error", (error: Error) => {
                 this.error("Connection error:", error);
-                this.reconnectAttempts++;
 
-                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                    if (this.connectTimeout) {
-                        clearTimeout(this.connectTimeout);
-                        this.connectTimeout = null;
-                    }
-                    this.socket?.disconnect();
-                    this.handleConnectionError(error);
-                    reject(error);
-                }
+                this.store.set(connectionAtom, (prev) => ({
+                    ...prev,
+                    connecting: false,
+                    error: error.message,
+                }));
+                reject(error);
             });
 
-            // Set timeout for connection attempt
-            this.connectTimeout = setTimeout(() => {
-                if (!this.socket?.connected && this.store.get(connectionAtom).connecting) {
-                    const error = new Error("Connection timeout");
-                    this.handleConnectionError(error);
-                    this.socket?.disconnect();
-                    reject(error);
-                }
-                this.connectTimeout = null;
-            }, 10000);
         });
     }
 
@@ -128,7 +102,12 @@ export class SocketService extends BaseService {
             this.log("Disconnecting...");
             this.socket.disconnect();
             this.socket = null;
-            // Note: the 'disconnect' listener will update the store
+
+            this.store.set(connectionAtom, {
+                socket: null,
+                connecting: false,
+                error: null,
+            });
         }
     }
 

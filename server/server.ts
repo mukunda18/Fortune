@@ -35,12 +35,13 @@ io.on("connection", (socket) => {
         callback(response);
     });
 
-    socket.on("leaveRoom", () => {
+    socket.on("leaveRoom", (callback: Function) => {
         const playerName = socketSessionService.getPlayerForSocket(socket.id);
         if (playerName) {
             console.log(`[Server] leaveRoom request: socket=${socket.id}, player=${playerName}`);
             roomService.leaveRoom(playerName, io, socket);
         }
+        if (callback) callback({ ok: true });
     });
 });
 

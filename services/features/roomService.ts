@@ -2,7 +2,7 @@ import { socketService } from "../core/socketService";
 import { apiService } from "../core/apiService";
 import { roomAtom, playerNameAtom } from "@/stores/roomStore";
 import { gameStateAtom } from "@/stores/gameStore";
-import { gameState } from "@/gameInterfaces/gameState";
+import { GameState } from "@/gameInterfaces/gameState";
 import { ServerResponse, isServerResponse } from "@/interfaces/serverResponse";
 import { BaseService } from "../baseService";
 
@@ -16,7 +16,7 @@ export class RoomService extends BaseService {
 
     private registerListeners() {
         // Handle room updates from socket
-        socketService.on("updateRoom", (room: gameState) => {
+        socketService.on("updateRoom", (room: GameState) => {
             this.log("Room updated:", room.version);
             this.store.set(gameStateAtom, room);
         });
@@ -48,7 +48,7 @@ export class RoomService extends BaseService {
 
         try {
             this.log("Joining room:", roomId);
-            const response = await socketService.emit<gameState | ServerResponse>(
+            const response = await socketService.emit<GameState | ServerResponse>(
                 "joinRoom",
                 roomId,
                 playerName
@@ -70,7 +70,7 @@ export class RoomService extends BaseService {
         }
     }
 
-    leaveRoom(): void {
+    async leaveRoom(): Promise<void> {
         const room = this.store.get(roomAtom);
 
         if (!socketService.isConnected() || !room.joined) {
@@ -80,7 +80,7 @@ export class RoomService extends BaseService {
 
         try {
             this.log("Leaving room...");
-            socketService.emit("leaveRoom");
+            await socketService.emit("leaveRoom");
             this.store.set(roomAtom, { id: "", joined: false });
             this.store.set(gameStateAtom, null);
         } catch (error) {

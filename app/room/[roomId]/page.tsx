@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAtom } from "jotai";
+
 import {
   roomAtom,
   connectingAtom,
   playerNameAtom,
+  connectionErrorAtom,
 } from "@/stores/roomStore";
 import { roomService, socketService } from "@/services";
+
 import GameStateViewer from "@/components/gameboard";
 
 export default function RoomPage() {
@@ -17,10 +20,10 @@ export default function RoomPage() {
 
   const [room] = useAtom(roomAtom);
   const [connecting] = useAtom(connectingAtom);
+  const [connectionError] = useAtom(connectionErrorAtom);
   const [playerName] = useAtom(playerNameAtom);
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
-
   const router = useRouter();
 
   useEffect(() => {
@@ -31,119 +34,47 @@ export default function RoomPage() {
   }, []);
 
   const handleLeaveRoom = async () => {
-    try {
-      roomService.leaveRoom();
-      router.push("/");
-    } catch (error) {
-      setError("Failed to leave room");
-    }
+    await roomService.leaveRoom();
+    router.push("/");
   };
 
   const handleJoinRoom = async () => {
     if (!roomId) return;
-
     setError("");
     setIsJoining(true);
     try {
       await roomService.joinRoom(roomId);
+      setIsJoining(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to join room";
-      setError(message);
+      setError(error instanceof Error ? error.message : "Failed to join room");
       setIsJoining(false);
     }
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div>
-        <div>
-          <div>
-            <div>
-              <span>🎮</span>
-            </div>
-            <h1>
-              Room: {roomId}
-            </h1>
-          </div>
-          <p>
-            Player: <span>{playerName}</span>
-          </p>
-        </div>
+    <article>
+      <header>
+        <h2>🎮 Room: {roomId}</h2>
+        <p>Player: {playerName}</p>
+        <p>Status: {room.joined ? '✅ Joined' : '⏳ Waiting'}</p>
+        <button onClick={handleLeaveRoom} disabled={connecting || isJoining}>Leave</button>
+      </header>
 
-        <div>
-          <div>
-            <p>
-              Status:
-              <span>
-                {room.joined ? '✅ Joined' : '⏳ Waiting'}
-              </span>
-            </p>
-          </div>
+      {error && <p style={{ color: 'red' }}>⚠️ {error}</p>}
+      {connectionError && <p style={{ color: 'red' }}>⚠️ Connection Error: {connectionError}</p>}
+      {connecting && <p>Connecting to server...</p>}
 
-          <button
-            onClick={handleLeaveRoom}
-            disabled={connecting || isJoining}
-          >
-            Leave
-          </button>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div>
-          <span>⚠️</span>
-          <div>
-            <p>Error</p>
-            <p>{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Connection Status */}
-      {connecting && (
-        <div>
-          <div></div>
-          <span>Connecting to server...</span>
-        </div>
-      )}
-
-      {/* Join Room Section */}
       {!room.joined && !connecting && (
-        <div>
-          <div>
-            <h2>
-              Ready to Join?
-            </h2>
-            <p>
-              Click the button below to join this room and start playing
-            </p>
-          </div>
-
-          {isJoining && (
-            <div>
-              <div></div>
-              <span>Joining room...</span>
-            </div>
-          )}
-
-          {!isJoining && (
-            <button
-              onClick={handleJoinRoom}
-            >
-              🚀 Join Room Now
-            </button>
-          )}
-        </div>
+        <section>
+          <h3>Ready to Join?</h3>
+          <p>Click below to start playing</p>
+          <button onClick={handleJoinRoom} disabled={isJoining}>
+            {isJoining ? "Joining..." : "🚀 Join Room Now"}
+          </button>
+        </section>
       )}
 
-      {/* Game Board */}
-      {room.joined && (
-        <div>
-          <GameStateViewer />
-        </div>
-      )}
-    </div>
+      {room.joined && <GameStateViewer />}
+    </article>
   );
 }
