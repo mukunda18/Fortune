@@ -93,6 +93,16 @@ export class RoomService extends BaseService {
             this.store.set(gameStateAtom, null);
         }
     }
+
+    async updateSettings(settings: any): Promise<void> {
+        try {
+            this.log("Updating settings:", settings);
+            await socketService.emit("updateSettings", settings);
+            this.log("Settings update sent successfully");
+        } catch (error) {
+            this.error("Failed to update settings:", error);
+        }
+    }
 }
 
 export const roomService = new RoomService();

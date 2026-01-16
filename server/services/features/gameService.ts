@@ -2,7 +2,7 @@ import { TurnPhase } from "@/gameInterfaces/turnPhases";
 import { BaseService } from "../baseService";
 import { GameState } from "@/gameInterfaces/gameState";
 import { PLAYER_COLORS } from "@/gameInterfaces/color";
-import { PROPERTIES, PROPERTY_GROUPS } from "./locations";
+import { PROPERTIES, PROPERTY_GROUPS } from "@/seeds/locations";
 
 const DEFAULT_NAMES = [
     "ShadowVex", "NeonRaptor", "VoidStrike", "FrostByte", "DarkPulse",
@@ -76,8 +76,9 @@ export class GameService extends BaseService {
             if (player.isDisconnected) {
                 player.isDisconnected = false;
                 player.disconnectTime = 0;
+                this.gameState.version++;
                 this.log(`Player ${effectiveName} reconnected`);
-                return { success: true, isReconnection: true, player, name: effectiveName };
+                return { success: true, isReconnection: true, name: effectiveName };
             } else {
                 return { success: false, isReconnection: false, message: "Name taken" };
             }
@@ -113,6 +114,7 @@ export class GameService extends BaseService {
 
         if (!this.gameState.admin) this.gameState.admin = effectiveName;
 
+        this.gameState.version++;
         this.log(`Player ${effectiveName} joined`);
         return { success: true, isReconnection: false, player: this.gameState.players[effectiveName], name: effectiveName };
     }
@@ -133,6 +135,7 @@ export class GameService extends BaseService {
             this.gameState.admin = remainingPlayers.length > 0 ? remainingPlayers[0] : "";
         }
 
+        this.gameState.version++;
         this.log(`Player ${playerName} left`);
     }
 
@@ -147,6 +150,7 @@ export class GameService extends BaseService {
 
         player.isDisconnected = true;
         player.disconnectTime = Date.now();
+        this.gameState.version++;
         this.log(`Player ${playerName} disconnected`);
     }
 
@@ -164,5 +168,19 @@ export class GameService extends BaseService {
         if (DEFAULT_NAMES.includes(name)) {
             this.remainingNames.add(name);
         }
+    }
+
+    updateSettings(newSettings: any) {
+        if (newSettings.maxPlayers !== undefined) {
+            const minAllowed = this.gameState.settings.minPlayers || 2;
+            newSettings.maxPlayers = Math.min(8, Math.max(minAllowed, parseInt(newSettings.maxPlayers) || minAllowed));
+        }
+
+        this.gameState.settings = { ...this.gameState.settings, ...newSettings };
+        this.gameState.version++;
+    }
+
+    incrementVersion() {
+        this.gameState.version++;
     }
 }

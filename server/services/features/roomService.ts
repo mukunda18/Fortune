@@ -37,16 +37,15 @@ export class RoomService extends BaseService {
         if (!gameService) {
             return { ok: false, code: "ROOM_NOT_FOUND", message: "Room not found" };
         }
-
+        let nameToUse = playerName;
         const prevPlayerName = socketSessionService.getPlayerForSocket(socket.id);
         if (prevPlayerName) {
             const previousRoom = this.playerToRoomMap.get(prevPlayerName);
             if (previousRoom && previousRoom !== roomName) {
                 this.leaveRoom(prevPlayerName, io, socket);
             }
+            else nameToUse = prevPlayerName;
         }
-
-        const nameToUse = prevPlayerName || playerName || "";
 
         const result = gameService.addPlayer(nameToUse);
 
@@ -59,11 +58,7 @@ export class RoomService extends BaseService {
 
         this.playerToRoomMap.set(finalName, roomName);
 
-        if (finalName !== playerName) {
-            socket.emit("changePlayerName", finalName);
-        }
-
-        room.version++;
+        socket.emit("changePlayerName", finalName);
 
         socket.join(roomName);
         socketSessionService.mapSocketToPlayer(socket.id, finalName);
@@ -81,14 +76,13 @@ export class RoomService extends BaseService {
         gameService.removePlayer(playerName);
         this.playerToRoomMap.delete(playerName);
 
-        const room = gameService.gameState;
+        if (io) {
+            io.to(roomName).emit("updateRoom", this.getRoom(roomName));
+        }
 
-        room.version++;
-
-        if (socket && io) {
+        if (socket) {
             socketSessionService.unmapSocket(socket.id);
             socket.leave(roomName);
-            io.to(roomName).emit("updateRoom", this.getRoom(roomName));
         }
 
         return roomName;
@@ -99,17 +93,54 @@ export class RoomService extends BaseService {
         if (!playerName) return;
 
         const roomName = this.playerToRoomMap.get(playerName);
-        if (!roomName) return;
+        if (!roomName) {
+            socketSessionService.unmapSocket(socketId);
+            return;
+        }
 
         const gameService = this.roomMap.get(roomName);
-        if (!gameService) return;
+        if (!gameService) {
+            socketSessionService.unmapSocket(socketId);
+            return;
+        }
 
-        gameService.disconnectPlayer(playerName);
+        if (gameService.gameState.turnPhase === "WAITING_FOR_PLAYERS") {
+            this.leaveRoom(playerName, io);
+            socketSessionService.unmapSocket(socketId);
+        } else {
+            gameService.disconnectPlayer(playerName);
+            io.to(roomName).emit("updateRoom", gameService.gameState);
+        }
+    }
 
-        const room = gameService.gameState;
-        room.version++;
+    updateSettings(io: Server, socketId: string, newSettings: any): void {
+        const playerName = socketSessionService.getPlayerForSocket(socketId);
+        if (!playerName) {
+            this.log(`Attempted settings update from unknown socket: ${socketId}`);
+            return;
+        }
 
-        io.to(roomName).emit("updateRoom", room);
+        const roomName = this.playerToRoomMap.get(playerName);
+        if (!roomName) {
+            this.log(`Player ${playerName} not in any room`);
+            return;
+        }
+
+        const gameService = this.roomMap.get(roomName);
+        if (!gameService) {
+            this.log(`Room ${roomName} not found`);
+            return;
+        }
+
+        if (gameService.gameState.admin !== playerName) {
+            this.log(`Non-admin ${playerName} tried to update settings in ${roomName} (Admin is ${gameService.gameState.admin})`);
+            return;
+        }
+
+        gameService.updateSettings(newSettings);
+
+        io.to(roomName).emit("updateRoom", gameService.gameState);
+        this.log(`Settings updated for room ${roomName} by admin ${playerName}:`, newSettings);
     }
 
     getRoom(roomId: string): GameState | undefined {

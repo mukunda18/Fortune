@@ -43,6 +43,17 @@ io.on("connection", (socket) => {
         }
         if (callback) callback({ ok: true });
     });
+
+    socket.on("updateSettings", (newSettings: any, callback: any) => {
+        try {
+            console.log(`[Server] updateSettings request from ${socket.id}`);
+            roomService.updateSettings(io, socket.id, newSettings);
+            if (callback) callback({ ok: true });
+        } catch (error) {
+            console.error(`[Server] updateSettings error:`, error);
+            if (callback) callback({ ok: false, error: "Internal server error" });
+        }
+    });
 });
 
 export { expressApp, server, io };

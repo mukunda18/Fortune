@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 
-type ConnectionState = {
+interface ConnectionState {
   socket: string | null;
   connecting: boolean;
   error: string | null;
@@ -12,7 +12,7 @@ export const connectionAtom = atom<ConnectionState>({
   error: null,
 });
 
-type RoomState = {
+interface RoomState {
   id: string;
   joined: boolean;
 };

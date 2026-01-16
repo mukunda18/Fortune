@@ -11,6 +11,9 @@ import {
   connectionErrorAtom,
 } from "@/stores/roomStore";
 import { roomService, socketService } from "@/services";
+import { GameBoard } from "@/components/game/GameBoard";
+import { GameSidebarLeft } from "@/components/game/GameSidebarLeft";
+import { GameSidebarRight } from "@/components/game/GameSidebarRight";
 
 
 export default function RoomPage() {
@@ -34,6 +37,7 @@ export default function RoomPage() {
 
   const handleLeaveRoom = async () => {
     await roomService.leaveRoom();
+    socketService.disconnect();
     router.push("/");
   };
 
@@ -51,39 +55,51 @@ export default function RoomPage() {
     }
   };
 
-  return (
-    <div>
-      <h1>Room Lobby</h1>
-      <p>Room ID: {roomId}</p>
-      <button onClick={handleLeaveRoom} disabled={connecting || isJoining}>
-        Leave Room
-      </button>
+  if (room.joined) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', border: '5px solid green', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div style={{ flexShrink: 0, height: '100%' }}>
+          <GameSidebarLeft />
+        </div>
+        <GameBoard />
+        <div style={{ flexShrink: 0, height: '100%' }}>
+          <GameSidebarRight />
+        </div>
+      </div>
+    );
+  }
 
-      <div>
+  return (
+    <div style={{ padding: '20px', border: '1px solid black' }}>
+      <h1>Room Lobby (Logic Test)</h1>
+      <p>Room ID: {roomId}</p>
+      <div style={{ border: '1px solid gray', padding: '10px', margin: '10px 0' }}>
         <p>Playing as: {playerName || "Guest"}</p>
       </div>
 
       {(error || connectionError) && (
-        <div>
-          <strong>Connection Error:</strong>
-          <p>{error || connectionError}</p>
+        <div style={{ border: '1px solid red', padding: '10px', color: 'red', marginBottom: '10px' }}>
+          {connectionError ? (
+            <strong>{connectionError}</strong>
+          ) : (
+            <><strong>Error:</strong> {error}</>
+          )}
         </div>
       )}
 
-      {connecting && <p>Connecting to server...</p>}
+      {connecting && <p>...Connecting...</p>}
 
       {!room.joined && !connecting && (
-        <div>
-          <h2>Ready to Play?</h2>
-          <button onClick={handleJoinRoom} disabled={isJoining}>
-            {isJoining ? "Joining..." : "Join Room"}
+        <div style={{ marginTop: '20px' }}>
+          <button onClick={handleJoinRoom} disabled={isJoining} style={{ padding: '10px', border: '2px solid black' }}>
+            {isJoining ? "Joining..." : "JOIN ROOM"}
           </button>
         </div>
       )}
 
-      <footer>
-        <p>Once you join, you'll see the game board and other players</p>
-      </footer>
+      <button onClick={handleLeaveRoom} style={{ marginTop: '10px' }}>
+        Cancel
+      </button>
     </div>
   );
 }

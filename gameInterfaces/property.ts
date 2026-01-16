@@ -13,7 +13,7 @@ export enum PropertyType {
 
 export interface PropertyGroup {
     name: string;
-    color: string;
+    image: string;
     properties: string[]; // Property IDs
 }
 
@@ -47,7 +47,6 @@ export interface UtilityProperty extends BuyableProperty {
     type: PropertyType.UTILITY;
     multipliers: number[];
 }
-
 
 export interface TaxProperty extends BaseProperty {
     type: PropertyType.TAX;

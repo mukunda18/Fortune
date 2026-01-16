@@ -30,6 +30,7 @@ export class SocketService extends BaseService {
 
             this.socket = io({
                 withCredentials: true,
+                transports: ["websocket"],
             });
 
             this.listenerBuffer.forEach((callbacks, event) => {
@@ -75,23 +76,19 @@ export class SocketService extends BaseService {
                     connecting: false,
                     error: reason === "io client disconnect" ? null : "Disconnected",
                 });
-
-                // Reset room state on disconnect
-                this.store.set(roomAtom, { id: "", joined: false });
-                this.store.set(gameStateAtom, null);
             });
 
             this.socket.on("connect_error", (error: Error) => {
-                this.error("Connection error:", error);
+                if (error.message !== this.store.get(connectionAtom).error) {
+                    this.log("Connection attempt failed:", error.message);
+                }
 
                 this.store.set(connectionAtom, (prev) => ({
                     ...prev,
                     connecting: false,
-                    error: error.message,
+                    error: "Disconnected",
                 }));
-                reject(error);
             });
-
         });
     }
 
@@ -99,7 +96,7 @@ export class SocketService extends BaseService {
         this.store.set(connectionAtom, {
             socket: null,
             connecting: false,
-            error: error.message,
+            error: "Disconnected",
         });
     }
 
