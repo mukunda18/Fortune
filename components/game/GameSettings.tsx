@@ -33,10 +33,14 @@ export const GameSettings = () => {
                     Starting Cash:
                     <input
                         type="number"
-                        value={settings.startingCash ?? 0}
-                        onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            if (isAdmin && !isNaN(val)) roomService.updateSettings({ startingCash: val });
+                        step="100"
+                        min="500"
+                        inputMode="numeric"
+                        value={settings.startingCash ?? 500}
+                        onBlur={(e) => {
+                            const parsed = parseInt(e.target.value) || 500;
+                            const val = Math.max(500, Math.round(parsed / 100) * 100);
+                            if (isAdmin) roomService.updateSettings({ startingCash: val });
                         }}
                         disabled={!isAdmin}
                         style={{ width: '60px', border: '1px solid black' }}

@@ -16,8 +16,7 @@ export const GameLog = () => {
                 <p style={{ margin: '2px 0', borderBottom: '1px solid #eee' }}>
                     DEBUG: Me: "{myName}" | Admin: "{adminName}" | IsAdmin: {isAdmin ? "YES" : "NO"}
                 </p>
-                <p style={{ margin: '2px 0' }}>Log: Awaiting game events...</p>
-                {isAdmin && <p style={{ margin: '2px 0', color: 'orange' }}>Status: You are the Admin</p>}
+                <p style={{ margin: '2px 0' }}>Awaiting game events...</p>
             </div>
         </div>
     );

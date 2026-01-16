@@ -167,6 +167,11 @@ export class GameService extends BaseService {
             newSettings.maxPlayers = Math.min(8, Math.max(minAllowed, parseInt(newSettings.maxPlayers)));
         }
 
+        if (newSettings.startingCash !== undefined) {
+            const rounded = Math.round(parseInt(newSettings.startingCash) / 100) * 100;
+            newSettings.startingCash = Math.max(500, rounded);
+        }
+
         this.gameState.settings = { ...this.gameState.settings, ...newSettings };
         this.gameState.version++;
     }

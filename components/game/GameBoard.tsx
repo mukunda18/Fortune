@@ -1,13 +1,14 @@
 'use client';
 
 import { useAtomValue } from 'jotai';
-import { propertiesAtom } from '@/stores/gameStore';
+import { propertiesAtom, playersAtom } from '@/stores/gameStore';
 import { PropertyCell } from './PropertyCell';
 import { CornerCell } from './CornerCell';
-import { Property } from '@/gameInterfaces/property';
+import { Property, BuyableProperty } from '@/gameInterfaces/property';
 
 export const GameBoard = () => {
     const propertiesMap = useAtomValue(propertiesAtom);
+    const playersMap = useAtomValue(playersAtom);
 
     const sortedProperties = Object.values(propertiesMap).sort((a, b) => a.position - b.position);
 
@@ -50,12 +51,22 @@ export const GameBoard = () => {
 
         const price = ('price' in p) ? p.price : undefined;
 
+        // Get owner color for buyable properties
+        let ownerColor: string | undefined;
+        if ('owner' in p && (p as BuyableProperty).owner) {
+            const owner = playersMap[(p as BuyableProperty).owner!];
+            if (owner) {
+                ownerColor = owner.color;
+            }
+        }
+
         return (
             <PropertyCell
                 key={p.name}
                 rowStart={rowStart} rowEnd={rowEnd}
                 colStart={colStart} colEnd={colEnd}
                 name={p.name} price={price} orientation={orientation}
+                ownerColor={ownerColor}
             />
         );
     };

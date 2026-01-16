@@ -9,9 +9,10 @@ interface PropertyCellProps {
     color?: string;
     price?: number;
     orientation: 'top' | 'bottom' | 'left' | 'right';
+    ownerColor?: string;
 }
 
-export const PropertyCell = ({ rowStart, rowEnd, colStart, colEnd, name, color, price, orientation }: PropertyCellProps) => {
+export const PropertyCell = ({ rowStart, rowEnd, colStart, colEnd, name, color, price, orientation, ownerColor }: PropertyCellProps) => {
     const isHorizontal = orientation === 'top' || orientation === 'bottom';
 
     return (
@@ -30,7 +31,7 @@ export const PropertyCell = ({ rowStart, rowEnd, colStart, colEnd, name, color, 
             textAlign: 'center',
             overflow: 'hidden'
         }}>
-            {/* Color Strip */}
+            {/* Property Color Strip */}
             {color && (
                 <div style={{
                     backgroundColor: color,
@@ -60,6 +61,20 @@ export const PropertyCell = ({ rowStart, rowEnd, colStart, colEnd, name, color, 
                     whiteSpace: 'nowrap',
                 }}>{name}</div>
             </div>
+
+            {/* Owner Color Strip */}
+            {ownerColor && (
+                <div style={{
+                    backgroundColor: ownerColor,
+                    height: isHorizontal ? '15%' : '100%',
+                    width: isHorizontal ? '100%' : '15%',
+                    borderTop: orientation === 'bottom' ? '1px solid rgba(0,0,0,0.3)' : 'none',
+                    borderBottom: orientation === 'top' ? '1px solid rgba(0,0,0,0.3)' : 'none',
+                    borderLeft: orientation === 'right' ? '1px solid rgba(0,0,0,0.3)' : 'none',
+                    borderRight: orientation === 'left' ? '1px solid rgba(0,0,0,0.3)' : 'none',
+                    boxShadow: 'inset 0 0 4px rgba(255,255,255,0.4)',
+                }} />
+            )}
         </div>
     );
 };
