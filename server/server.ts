@@ -25,8 +25,11 @@ io.on("connection", (socket) => {
     console.log(`[Server] New socket connection initialized: ${socket.id}`);
 
     socket.on("disconnect", () => {
-        console.log(`[Server] Client disconnected: ${socket.id}`);
-        roomService.disconnect(io, socket.id);
+        const playerName = socketSessionService.getPlayerForSocket(socket.id);
+        if (playerName) {
+            console.log(`[Server] Client disconnected: ${socket.id}`);
+            roomService.disconnect(io, socket.id, playerName);
+        }
     });
 
     socket.on("joinRoom", (roomId: string, playerName: string, callback: Function) => {
@@ -35,7 +38,7 @@ io.on("connection", (socket) => {
         callback(response);
     });
 
-    socket.on("leaveRoom", (callback: Function) => {
+    socket.on("leaveRoom", (callback?: Function) => {
         const playerName = socketSessionService.getPlayerForSocket(socket.id);
         if (playerName) {
             console.log(`[Server] leaveRoom request: socket=${socket.id}, player=${playerName}`);
@@ -44,15 +47,10 @@ io.on("connection", (socket) => {
         if (callback) callback({ ok: true });
     });
 
-    socket.on("updateSettings", (newSettings: any, callback: any) => {
-        try {
-            console.log(`[Server] updateSettings request from ${socket.id}`);
-            roomService.updateSettings(io, socket.id, newSettings);
-            if (callback) callback({ ok: true });
-        } catch (error) {
-            console.error(`[Server] updateSettings error:`, error);
-            if (callback) callback({ ok: false, error: "Internal server error" });
-        }
+    socket.on("updateSettings", (newSettings: any, callback?: Function) => {
+        console.log(`[Server] updateSettings request from ${socket.id}`);
+        roomService.updateSettings(io, socket.id, newSettings);
+        if (callback) callback({ ok: true });
     });
 });
 

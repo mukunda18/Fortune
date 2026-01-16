@@ -1,6 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-import { connectionAtom, roomAtom } from "@/stores/roomStore";
-import { gameStateAtom } from "@/stores/gameStore";
+import { connectionAtom } from "@/stores/roomStore";
 import { apiService } from "./apiService";
 import { BaseService } from "../baseService";
 

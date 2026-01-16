@@ -61,34 +61,29 @@ export class GameService extends BaseService {
     }
 
     addPlayer(playerName: string): { success: boolean, isReconnection: boolean, player?: any, message?: string, name?: string } {
-        let effectiveName = playerName;
-        let playerExists = !!this.gameState.players[effectiveName];
+        const existingPlayer = this.gameState.players[playerName];
 
-        if (!effectiveName || (playerExists && !this.gameState.players[effectiveName].isDisconnected)) {
-            do {
-                effectiveName = this.getName();
-                playerExists = !!this.gameState.players[effectiveName];
-            } while (playerExists);
-        }
-
-        if (this.gameState.players[effectiveName]) {
-            const player = this.gameState.players[effectiveName];
-            if (player.isDisconnected) {
-                player.isDisconnected = false;
-                player.disconnectTime = 0;
+        if (existingPlayer) {
+            if (existingPlayer.isDisconnected) {
+                existingPlayer.isDisconnected = false;
+                existingPlayer.disconnectTime = 0;
                 this.gameState.version++;
-                this.log(`Player ${effectiveName} reconnected`);
-                return { success: true, isReconnection: true, name: effectiveName };
-            } else {
-                return { success: false, isReconnection: false, message: "Name taken" };
+                this.log(`Player ${playerName} reconnected`);
+                return { success: true, isReconnection: true, name: playerName };
             }
         }
 
         if (Object.keys(this.gameState.players).length >= this.gameState.settings.maxPlayers) {
             return { success: false, isReconnection: false, message: "Room is full" };
         }
+
         if (this.gameState.turnPhase !== TurnPhase.WAITING_FOR_PLAYERS) {
             return { success: false, isReconnection: false, message: "Game already in progress" };
+        }
+
+        let effectiveName = playerName;
+        if (!effectiveName || this.gameState.players[effectiveName]) {
+            effectiveName = this.getName();
         }
 
         const usedColors = this.gameState.usedColors;
@@ -128,6 +123,7 @@ export class GameService extends BaseService {
         delete this.gameState.players[playerName];
 
         this.putName(playerName);
+
         if (this.gameState.admin === playerName) {
             const remainingPlayers = Object.keys(this.gameState.players).filter(p =>
                 !this.gameState.players[p].isBankrupt && !this.gameState.players[p].isDisconnected
@@ -142,11 +138,6 @@ export class GameService extends BaseService {
     disconnectPlayer(playerName: string) {
         const player = this.gameState.players[playerName];
         if (!player) return;
-
-        if (this.gameState.turnPhase === TurnPhase.WAITING_FOR_PLAYERS) {
-            this.removePlayer(playerName);
-            return;
-        }
 
         player.isDisconnected = true;
         player.disconnectTime = Date.now();
