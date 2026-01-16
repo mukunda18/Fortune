@@ -112,13 +112,7 @@ export class RoomService extends BaseService {
         io.to(roomName).emit("updateRoom", gameService.gameState);
     }
 
-    updateSettings(io: Server, socketId: string, newSettings: any): void {
-        const playerName = socketSessionService.getPlayerForSocket(socketId);
-        if (!playerName) {
-            this.log(`Attempted settings update from unknown socket: ${socketId}`);
-            return;
-        }
-
+    updateSettings(io: Server, playerName: string, newSettings: any): void {
         const roomName = this.playerToRoomMap.get(playerName);
         if (!roomName) {
             this.log(`Player ${playerName} not in any room`);
@@ -136,6 +130,11 @@ export class RoomService extends BaseService {
             return;
         }
 
+        if (gameService.gameState.turnPhase !== "WAITING_FOR_PLAYERS") {
+            this.log(`Game in progress in ${roomName}`);
+            return;
+        }
+
         gameService.updateSettings(newSettings);
 
         io.to(roomName).emit("updateRoom", gameService.gameState);
@@ -144,6 +143,25 @@ export class RoomService extends BaseService {
 
     getRoom(roomId: string): GameState | undefined {
         return this.roomMap.get(roomId)?.gameState;
+    }
+
+    startGame(playerName: string, io: Server): void {
+        const roomName = this.playerToRoomMap.get(playerName);
+        if (!roomName) {
+            this.log(`Player ${playerName} not in any room`);
+            return;
+        }
+        const gameService = this.roomMap.get(roomName);
+        if (!gameService) {
+            this.log(`Room ${roomName} not found`);
+            return;
+        }
+        const success = gameService.startGame(playerName);
+        if (!success) {
+            this.log(`Player ${playerName} is not the admin`);
+            return;
+        }
+        io.to(roomName).emit("updateRoom", gameService.gameState);
     }
 }
 

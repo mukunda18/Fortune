@@ -163,15 +163,22 @@ export class GameService extends BaseService {
 
     updateSettings(newSettings: any) {
         if (newSettings.maxPlayers !== undefined) {
-            const minAllowed = this.gameState.settings.minPlayers || 2;
-            newSettings.maxPlayers = Math.min(8, Math.max(minAllowed, parseInt(newSettings.maxPlayers) || minAllowed));
+            const minAllowed = this.gameState.settings.minPlayers;
+            newSettings.maxPlayers = Math.min(8, Math.max(minAllowed, parseInt(newSettings.maxPlayers)));
         }
 
         this.gameState.settings = { ...this.gameState.settings, ...newSettings };
         this.gameState.version++;
     }
 
-    incrementVersion() {
-        this.gameState.version++;
+    startGame(playerName: string): boolean {
+        if (this.gameState.admin === playerName) {
+            this.gameState.turnPhase = TurnPhase.STARTING_GAME;
+            this.gameState.version++;
+            this.log(`Game started by ${playerName}`);
+            return true;
+        }
+        this.log(`Player ${playerName} is not the admin`);
+        return false;
     }
 }

@@ -38,19 +38,31 @@ io.on("connection", (socket) => {
         callback(response);
     });
 
-    socket.on("leaveRoom", (callback?: Function) => {
+    socket.on("leaveRoom", (callback: Function) => {
         const playerName = socketSessionService.getPlayerForSocket(socket.id);
         if (playerName) {
             console.log(`[Server] leaveRoom request: socket=${socket.id}, player=${playerName}`);
             roomService.leaveRoom(playerName, io, socket);
         }
-        if (callback) callback({ ok: true });
+        callback({ ok: true });
     });
 
-    socket.on("updateSettings", (newSettings: any, callback?: Function) => {
-        console.log(`[Server] updateSettings request from ${socket.id}`);
-        roomService.updateSettings(io, socket.id, newSettings);
-        if (callback) callback({ ok: true });
+    socket.on("updateSettings", (newSettings: any, callback: Function) => {
+        const playerName = socketSessionService.getPlayerForSocket(socket.id);
+        if (playerName) {
+            console.log(`[Server] updateSettings request from ${playerName}`);
+            roomService.updateSettings(io, playerName, newSettings);
+        }
+        callback({ ok: true });
+    });
+
+    socket.on("startGame", (callback: Function) => {
+        const playerName = socketSessionService.getPlayerForSocket(socket.id);
+        if (playerName) {
+            console.log(`[Server] startGame request from ${playerName}`);
+            roomService.startGame(playerName, io);
+        }
+        callback({ ok: true });
     });
 });
 
