@@ -64,6 +64,15 @@ io.on("connection", (socket) => {
         }
         callback({ ok: true });
     });
+
+    socket.on("game:rollDice", (callback: Function) => {
+        const playerName = socketSessionService.getPlayerForSocket(socket.id);
+        if (playerName) {
+            console.log(`[Server] rollDice request from ${playerName}`);
+            roomService.rollDice(playerName, io);
+        }
+        callback({ ok: true });
+    });
 });
 
 export { expressApp, server, io };

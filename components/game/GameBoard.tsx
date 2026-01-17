@@ -4,13 +4,86 @@ import { useAtomValue } from 'jotai';
 import { propertiesAtom, playersAtom } from '@/stores/gameStore';
 import { PropertyCell } from './PropertyCell';
 import { CornerCell } from './CornerCell';
+import { PlayerContainer } from './PlayerContainer';
+import { BoardCenter } from './BoardCenter';
 import { Property, BuyableProperty } from '@/gameInterfaces/property';
+import { Player } from '@/gameInterfaces/player';
+
+// Helper to get grid position from board position
+const getGridPosition = (pos: number): { rowStart: number; rowEnd: number; colStart: number; colEnd: number } => {
+    let rowStart, rowEnd, colStart, colEnd;
+
+    if (pos === 0) {
+        // GO corner
+        rowStart = 1; rowEnd = 5; colStart = 1; colEnd = 5;
+    } else if (pos === 10) {
+        // Jail corner
+        rowStart = 1; rowEnd = 5; colStart = 23; colEnd = 27;
+    } else if (pos === 20) {
+        // Vacation corner
+        rowStart = 23; rowEnd = 27; colStart = 23; colEnd = 27;
+    } else if (pos === 30) {
+        // Go To Jail corner
+        rowStart = 23; rowEnd = 27; colStart = 1; colEnd = 5;
+    } else if (pos > 0 && pos < 10) {
+        // Top Row (Left to Right)
+        rowStart = 1; rowEnd = 5;
+        colStart = 5 + (pos - 1) * 2;
+        colEnd = colStart + 2;
+    } else if (pos > 10 && pos < 20) {
+        // Right Column (Top to Bottom)
+        rowStart = 5 + (pos - 11) * 2;
+        rowEnd = rowStart + 2;
+        colStart = 23; colEnd = 27;
+    } else if (pos > 20 && pos < 30) {
+        // Bottom Row (Right to Left)
+        rowStart = 23; rowEnd = 27;
+        colStart = 21 - (pos - 21) * 2;
+        colEnd = colStart + 2;
+    } else {
+        // Left Column (Bottom to Top)
+        rowStart = 21 - (pos - 31) * 2;
+        rowEnd = rowStart + 2;
+        colStart = 1; colEnd = 5;
+    }
+
+    return { rowStart, rowEnd, colStart, colEnd };
+};
 
 export const GameBoard = () => {
     const propertiesMap = useAtomValue(propertiesAtom);
     const playersMap = useAtomValue(playersAtom);
 
     const sortedProperties = Object.values(propertiesMap).sort((a, b) => a.position - b.position);
+
+    const playersByPosition: Record<number, Player[]> = {};
+    Object.values(playersMap).forEach((player) => {
+        if (!player.isBankrupt) {
+            if (!playersByPosition[player.position]) {
+                playersByPosition[player.position] = [];
+            }
+            playersByPosition[player.position].push(player);
+        }
+    });
+
+    // Render player tokens for each position
+    const renderPlayerTokens = () => {
+        return Object.entries(playersByPosition).map(([posStr, players]) => {
+            const pos = parseInt(posStr);
+            const { rowStart, rowEnd, colStart, colEnd } = getGridPosition(pos);
+
+            return (
+                <PlayerContainer
+                    key={`players-${pos}`}
+                    players={players}
+                    rowStart={rowStart}
+                    rowEnd={rowEnd}
+                    colStart={colStart}
+                    colEnd={colEnd}
+                />
+            );
+        });
+    };
 
     const renderCell = (p: Property) => {
         const pos = p.position;
@@ -94,24 +167,11 @@ export const GameBoard = () => {
                 {/* Properties from Store */}
                 {sortedProperties.map(renderCell)}
 
+                {/* Player Tokens */}
+                {renderPlayerTokens()}
+
                 {/* Center / Logo Area */}
-                <div style={{
-                    gridRow: '5 / 23',
-                    gridColumn: '5 / 23',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '40px',
-                    fontWeight: '900',
-                    color: '#e74c3c',
-                    letterSpacing: '5px',
-                    transform: 'rotate(-45deg)',
-                    textShadow: '2px 2px 0px black',
-                    opacity: 0.2,
-                    pointerEvents: 'none'
-                }}>
-                    FORTUNE
-                </div>
+                <BoardCenter />
             </div>
         </div>
     );

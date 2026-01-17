@@ -112,6 +112,16 @@ export class RoomService extends BaseService {
             this.error("Failed to start game:", error);
         }
     }
+
+    async rollDice() {
+        try {
+            this.log("Rolling dice...");
+            await socketService.emit("rollDice");
+            this.log("Dice rolled successfully");
+        } catch (error) {
+            this.error("Failed to roll dice:", error);
+        }
+    }
 }
 
 export const roomService = new RoomService();

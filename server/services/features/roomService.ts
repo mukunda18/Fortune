@@ -158,9 +158,24 @@ export class RoomService extends BaseService {
         }
         const success = gameService.startGame(playerName);
         if (!success) {
-            this.log(`Player ${playerName} is not the admin`);
             return;
         }
+        io.to(roomName).emit("updateRoom", gameService.gameState);
+    }
+
+    rollDice(playerName: string, io: Server): void {
+        const roomName = this.playerToRoomMap.get(playerName);
+        if (!roomName) {
+            this.log(`Player ${playerName} not in any room`);
+            return;
+        }
+        const gameService = this.roomMap.get(roomName);
+        if (!gameService) {
+            this.log(`Room ${roomName} not found`);
+            return;
+        }
+        const success = gameService.rollDice(playerName);
+        if (!success) return;
         io.to(roomName).emit("updateRoom", gameService.gameState);
     }
 }

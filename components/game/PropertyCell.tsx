@@ -13,7 +13,29 @@ interface PropertyCellProps {
 }
 
 export const PropertyCell = ({ rowStart, rowEnd, colStart, colEnd, name, color, price, orientation, ownerColor }: PropertyCellProps) => {
-    const isHorizontal = orientation === 'top' || orientation === 'bottom';
+
+    let rotation = 0;
+    let width = '100%';
+    let height = '100%';
+
+    switch (orientation) {
+        case 'top':
+            rotation = 0;
+            break;
+        case 'bottom':
+            rotation = 0;
+            break;
+        case 'left':
+            width = '50%';
+            height = '200%';
+            rotation = 90;
+            break;
+        case 'right':
+            width = '50%';
+            height = '200%';
+            rotation = -90;
+            break;
+    }
 
     return (
         <div style={{
@@ -21,60 +43,64 @@ export const PropertyCell = ({ rowStart, rowEnd, colStart, colEnd, name, color, 
             gridRowEnd: rowEnd,
             gridColumnStart: colStart,
             gridColumnEnd: colEnd,
-            border: '1px solid black',
+            position: 'relative',
             display: 'flex',
-            flexDirection: orientation === 'top' ? 'column-reverse' :
-                orientation === 'bottom' ? 'column' :
-                    orientation === 'left' ? 'row-reverse' : 'row',
-            backgroundColor: 'white',
-            fontSize: '8px',
-            textAlign: 'center',
-            overflow: 'hidden'
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
         }}>
-            {/* Property Color Strip */}
-            {color && (
-                <div style={{
-                    backgroundColor: color,
-                    height: isHorizontal ? '20%' : '100%',
-                    width: isHorizontal ? '100%' : '20%',
-                    borderBottom: orientation === 'bottom' ? '1px solid black' : 'none',
-                    borderTop: orientation === 'top' ? '1px solid black' : 'none',
-                    borderRight: orientation === 'right' ? '1px solid black' : 'none',
-                    borderLeft: orientation === 'left' ? '1px solid black' : 'none',
-                }} />
-            )}
-
+            {/* The Rotatable Card Container */}
             <div style={{
-                flex: 1,
+                width: width,
+                height: height,
+                transform: `rotate(${rotation}deg)`,
+                border: '1px solid black',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '2px',
-                wordBreak: 'break-word',
-                fontWeight: 'bold',
+                justifyContent: 'space-between',
+                backgroundColor: 'white',
+                fontSize: '9px',
+                lineHeight: 1,
+                textAlign: 'center',
+                boxSizing: 'border-box',
+                whiteSpace: 'nowrap',
+                position: 'absolute',
             }}>
-                <div style={{
-                    transform: orientation === 'left' ? 'rotate(90deg)' :
-                        orientation === 'right' ? 'rotate(-90deg)' : 'none',
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                }}>{name}</div>
-            </div>
+                {/* Top Section: Color & Name */}
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                    {color && (
+                        <div style={{
+                            backgroundColor: color,
+                            width: '100%',
+                            height: '12px',
+                            borderBottom: '1px solid black',
+                        }} />
+                    )}
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '2px',
+                        fontWeight: 'bold'
+                    }}>
+                        {name}
+                    </div>
+                </div>
 
-            {/* Owner Color Strip */}
-            {ownerColor && (
+                {/* Bottom Section: Price / Owner */}
                 <div style={{
-                    backgroundColor: ownerColor,
-                    height: isHorizontal ? '15%' : '100%',
-                    width: isHorizontal ? '100%' : '15%',
-                    borderTop: orientation === 'bottom' ? '1px solid rgba(0,0,0,0.3)' : 'none',
-                    borderBottom: orientation === 'top' ? '1px solid rgba(0,0,0,0.3)' : 'none',
-                    borderLeft: orientation === 'right' ? '1px solid rgba(0,0,0,0.3)' : 'none',
-                    borderRight: orientation === 'left' ? '1px solid rgba(0,0,0,0.3)' : 'none',
-                    boxShadow: 'inset 0 0 4px rgba(255,255,255,0.4)',
-                }} />
-            )}
+                    width: '100%',
+                    backgroundColor: ownerColor || 'transparent',
+                    color: ownerColor ? 'white' : 'black',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: '2px 0',
+                    fontWeight: 'bold',
+                }}>
+                    {price ? `$${price}` : ''}
+                </div>
+            </div>
         </div>
     );
 };

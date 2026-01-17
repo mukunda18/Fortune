@@ -22,7 +22,7 @@ export class GameService extends BaseService {
         this.gameState = {
             admin: "",
             usedColors: [],
-            dice: [0, 0],
+            dice: [1, 1],
             turnPhase: TurnPhase.WAITING_FOR_PLAYERS,
             players: {},
             currentPlayer: "",
@@ -178,9 +178,28 @@ export class GameService extends BaseService {
 
     startGame(playerName: string): boolean {
         if (this.gameState.admin === playerName) {
-            this.gameState.turnPhase = TurnPhase.STARTING_GAME;
+            const playerIds = Object.keys(this.gameState.players);
+            if (playerIds.length < this.gameState.settings.minPlayers) {
+                this.log(`Cannot start game: not enough players (min ${this.gameState.settings.minPlayers})`);
+                return false;
+            }
+
+            this.gameState.turnPhase = TurnPhase.PRE_ROLL;
+            this.gameState.currentPlayer = playerIds[0];
+
             this.gameState.version++;
             this.log(`Game started by ${playerName}`);
+            return true;
+        }
+        this.log(`Player ${playerName} is not the admin`);
+        return false;
+    }
+
+    rollDice(playerName: string): boolean {
+        if (this.gameState.admin === playerName) {
+            this.gameState.dice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+            this.gameState.version++;
+            this.log(`Dice rolled by ${playerName}`);
             return true;
         }
         this.log(`Player ${playerName} is not the admin`);
